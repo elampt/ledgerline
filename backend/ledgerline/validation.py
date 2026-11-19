@@ -7,7 +7,9 @@ from __future__ import annotations
 import re
 import sqlite3
 from datetime import date
+from decimal import Decimal
 
+from .config import flag_enabled
 from .models import Invoice
 from .reference import ReferenceData
 
@@ -114,6 +116,18 @@ def check_totals(inv: Invoice) -> list[str]:
     return [] if abs(computed - _paise(inv.total)) <= TOTALS_TOLERANCE_PAISE else ["totals_mismatch"]
 
 
+def check_line_amounts(inv: Invoice) -> list[str]:
+    """RULINGS disp_05: each line's quantity × unit price against its printed amount, within the ₹1.00 that §3
+    allows the total. A line without both a quantity and a unit price is not checked."""
+    for item in inv.line_items:
+        if item.quantity is None or item.unit_price is None:
+            continue
+        expected_paise = Decimal(str(item.quantity)) * Decimal(str(item.unit_price)) * 100
+        if abs(expected_paise - _paise(item.amount)) > TOTALS_TOLERANCE_PAISE:
+            return ["line_amount_mismatch"]
+    return []
+
+
 def _supplier_key(gstin: str | None, name: str | None, domestic: bool) -> str:
     return (gstin or "").strip().upper() if domestic and gstin else "name:" + _name_key(name)
 
@@ -186,6 +200,7 @@ def run_checks(conn: sqlite3.Connection, ref: ReferenceData, inv: Invoice, raw_t
         + check_vendor_new(inv, vendor)
         + check_tax_type(inv, str(ref.buyer.get("state_code") or BUYER_STATE_CODE))
         + check_totals(inv)
+        + (check_line_amounts(inv) if flag_enabled("LINE_AMOUNT_CHECK") else [])
         + check_duplicate(conn, ref, inv, org_id)
         + check_bank_details(inv, vendor)
         + check_foreign_currency(inv)

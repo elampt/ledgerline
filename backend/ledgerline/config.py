@@ -13,6 +13,11 @@ load_dotenv(REPO_ROOT / ".env")
 USD_TO_INR = 88.0  # finance's planning rate
 
 
+def flag_enabled(name: str) -> bool:
+    """A Part 2 ruling that departs from AP_POLICY.md (submission/RULINGS.md). Off unless LEDGERLINE_FLAG_<NAME>=1."""
+    return os.getenv(f"LEDGERLINE_FLAG_{name}") == "1"
+
+
 @dataclass(frozen=True)
 class Settings:
     llm_provider: str

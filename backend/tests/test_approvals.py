@@ -102,6 +102,19 @@ def test_a_duplicate_cannot_be_approved_but_can_be_rejected(api, upload):
     assert reject(api, duplicate["id"]).status_code == 200
 
 
+def test_disp_02_with_the_flag_a_duplicate_of_a_paid_invoice_can_only_be_rejected(api, upload, monkeypatch):
+    monkeypatch.setenv("LEDGERLINE_FLAG_DUPLICATE_ZERO_APPROVALS", "1")
+    # disp_02's number and date: SIS/26-27/0018 was paid on 2026-04-22 (paid_invoices.csv)
+    duplicate = upload(invoice_number="SIS/26-27/0018", invoice_date="2026-04-02")
+    assert duplicate["review_reasons"] == ["duplicate"]
+    assert duplicate["required_approvals"] == 0
+    for user in ("kavya.iyer", "kavya.iyer", "farhan.sheikh"):  # repeated, then by a second person
+        assert approve(api, duplicate["id"], user=user).status_code == 409  # §4.4
+    assert payments(duplicate["id"]) == 0
+    assert reject(api, duplicate["id"]).status_code == 200
+    assert api.get(f"/api/invoices/{duplicate['id']}").json()["status"] == "rejected"
+
+
 def test_a_credit_note_cannot_be_approved_for_payment(api, upload):
     inv = upload(document_type="credit_note")
     assert approve(api, inv["id"]).status_code == 409  # §2: credit notes are never approved for payment

@@ -6,6 +6,7 @@ import sqlite3
 from dataclasses import asdict
 
 from . import db
+from .config import flag_enabled
 from .extraction import extract
 from .llm.pricing import cost_usd
 from .models import Invoice, LineItem
@@ -16,10 +17,12 @@ from .validation import POLICY_CODES, is_domestic, run_checks
 HIGH_VALUE_THRESHOLD_PAISE = 5_00_000_00  # §4.1: ₹5,00,000.00 or more needs two approvals
 
 
-def required_approvals(inv: Invoice) -> int:
+def required_approvals(inv: Invoice, review_reasons: list[str] = ()) -> int:
     """§4.1. An unknown total can't be shown to be under the threshold, so it needs two."""
     if inv.document_type == "credit_note":
         return 0  # credit notes are never approved for payment
+    if "duplicate" in review_reasons and flag_enabled("DUPLICATE_ZERO_APPROVALS"):
+        return 0  # RULINGS disp_02: §4.4 says a duplicate can't be approved, only rejected
     if not is_domestic(inv) or inv.total is None:
         return 2
     return 2 if round(inv.total * 100) >= HIGH_VALUE_THRESHOLD_PAISE else 1
@@ -74,7 +77,7 @@ def process_document(
     model_reasons = [r for r in (data.get("review_reasons") or []) if r in POLICY_CODES]
     review_reasons = list(dict.fromkeys(warnings + model_reasons))
     needs_review = bool(review_reasons)
-    approvals_needed = required_approvals(inv)
+    approvals_needed = required_approvals(inv, review_reasons)
     status = "needs_review" if needs_review else "ready_for_approval"
 
     cur = conn.execute(
