@@ -1,0 +1,12 @@
+# re-run of the 8 documents rate-limited in predict.log, same starter code (2520a99) — started 2026-11-19T09:50:32Z
+[processing_error] dev_020.txt: Client error '429 Too Many Requests' for url 'https://api.perplexity.ai/orchestrator/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+[processing_error] disp_02.txt: Client error '429 Too Many Requests' for url 'https://api.perplexity.ai/orchestrator/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+[processing_error] disp_03.txt: Client error '429 Too Many Requests' for url 'https://api.perplexity.ai/orchestrator/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+[processing_error] disp_06.eml: Client error '429 Too Many Requests' for url 'https://api.perplexity.ai/orchestrator/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+wrote 8/8 predictions to /Users/elam/Work/Projects/ledgerline/submission/runs/starter_2520a99/retry_rate_limited.jsonl (4 processing_error)
+$PY -m ledgerline.cli predict --input $IN --reference ../data/reference    0.35s user 0.09s system 0% cpu 6:32.35 total
+# finished 2026-11-19T09:57:05Z

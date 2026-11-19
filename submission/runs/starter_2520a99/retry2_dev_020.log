@@ -1,0 +1,5 @@
+# second re-run of dev_020 (rate-limited twice), same starter code (2520a99) — started 2026-11-19T10:00:29Z
+[processing_error] dev_020.txt: Client error '429 Too Many Requests' for url 'https://api.perplexity.ai/orchestrator/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+wrote 1/1 predictions to /Users/elam/Work/Projects/ledgerline/submission/runs/starter_2520a99/retry2_dev_020.jsonl (1 processing_error)
+# finished 2026-11-19T10:01:15Z

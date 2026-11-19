@@ -1,0 +1,14 @@
+# starter's own eval/run_eval.py at commit 2520a99 — started 2026-11-19T09:22:01Z
+skipping dev_002: Client error '429 Too Many Requests' for url 'https://api.perplexity.ai/orchestrator/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+skipping dev_005: Client error '429 Too Many Requests' for url 'https://api.perplexity.ai/orchestrator/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+skipping dev_007: Client error '429 Too Many Requests' for url 'https://api.perplexity.ai/orchestrator/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+skipping dev_016: Client error '429 Too Many Requests' for url 'https://api.perplexity.ai/orchestrator/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+skipping dev_018: Client error '429 Too Many Requests' for url 'https://api.perplexity.ai/orchestrator/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+Field accuracy: 226/228 = 99.1%
+$PY -u eval/run_eval.py  1.02s user 0.23s system 0% cpu 22:11.63 total
+# exit=0 finished 2026-11-19T09:44:12Z

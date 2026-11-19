@@ -1,0 +1,22 @@
+# starter settings (commit 2520a99: the starter plus the F6 reply-parsing fix only) — predict started 2026-11-19T08:55:57Z
+[processing_error] dev_002.txt: Client error '429 Too Many Requests' for url 'https://api.perplexity.ai/orchestrator/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+[processing_error] dev_010.txt: Client error '429 Too Many Requests' for url 'https://api.perplexity.ai/orchestrator/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+[processing_error] dev_011.txt: Client error '429 Too Many Requests' for url 'https://api.perplexity.ai/orchestrator/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+[processing_error] dev_020.txt: Client error '429 Too Many Requests' for url 'https://api.perplexity.ai/orchestrator/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+wrote 24/24 predictions to /Users/elam/Work/Projects/ledgerline/submission/runs/starter_2520a99/predictions_dev.jsonl (4 processing_error)
+$PY -m ledgerline.cli predict --input ../data/invoices/dev --reference     1.02s user 0.24s system 0% cpu 19:50.67 total
+[processing_error] disp_02.txt: Client error '429 Too Many Requests' for url 'https://api.perplexity.ai/orchestrator/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+[processing_error] disp_03.txt: Client error '429 Too Many Requests' for url 'https://api.perplexity.ai/orchestrator/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+[processing_error] disp_05.txt: Client error '429 Too Many Requests' for url 'https://api.perplexity.ai/orchestrator/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+[processing_error] disp_06.eml: Client error '429 Too Many Requests' for url 'https://api.perplexity.ai/orchestrator/v1/chat/completions'
+For more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/429
+wrote 6/6 predictions to /Users/elam/Work/Projects/ledgerline/submission/runs/starter_2520a99/predictions_disputed.jsonl (4 processing_error)
+$PY -m ledgerline.cli predict --input ../data/invoices/disputed --reference    0.31s user 0.07s system 0% cpu 6:12.37 total
+# finished 2026-11-19T09:22:01Z
