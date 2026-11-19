@@ -66,7 +66,7 @@ LEDGERLINE_FLAG_LINE_AMOUNT_CHECK=1: Checks quantity multiplied by unit price ag
 
 **1. disp_02 – Revised invoice already paid**
 
-This is the highest immediate financial risk. The original invoice has already been paid, but the revised document uses the same invoice number and date while requesting another payment. The existing duplicate detection catches it, but the approval count and enforcement need attention. A date-parsing inconsistency could also allow the duplicate check to be bypassed. I would prioritize reliable date normalization, duplicate detection and strict rejection of duplicate approval attempts.
+This is the highest immediate financial risk. The original invoice has already been paid, but the revised document uses the same invoice number and date while requesting another payment. The existing duplicate detection catches it, and the API already refused to approve a duplicate, but the approval count was wrong. A date-parsing inconsistency could also let the duplicate check be bypassed: copied as printed, 02/04/2026 was read as 4 February, in the previous financial year. Both are now fixed: the count behind `LEDGERLINE_FLAG_DUPLICATE_ZERO_APPROVALS`, and the date reading with no flag, because AP_POLICY §1 already says Indian vendors print dates day first.
 
 **2. disp_05 – Incorrect line amount**
 

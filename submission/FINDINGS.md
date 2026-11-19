@@ -280,7 +280,7 @@ The order follows one question: how directly, and how likely, does the problem l
 - **The cost dashboard is about 1,000× too low.** The CTO's question.
 - **The "94%" measures the wrong thing.**
 
-The old F8 (dates and amounts) moved to *Found but not fixed*, because it was latent in my runs.
+The old F8 (dates and amounts) moved to *Found but not fixed*, because it was latent in my runs. Its date half was fixed later (`aa58720`), when disp_02 showed what it could let through.
 
 ## Everything else I found (one line each)
 
@@ -300,18 +300,18 @@ The old F8 (dates and amounts) moved to *Found but not fixed*, because it was la
 - **There is no audit log of approvals and rejections** (policy §4.7). A rejection doesn't even record who rejected. **Fixed in `829bc8b`:** an append-only audit log, written in the same transaction as each decision (`test_approvals.py`).
 - **The UI polls every 500 ms and never stops** (`App.tsx:27–31`).
 - **Recorded latency is LLM time only.** The CTO's target is p95 under 10 seconds end to end.
-- **"Tests: all green" is true but means little.** The 20 offline tests pass, but none covers routing, approvals or bank checks, and one asserts the date bug.
+- **"Tests: all green" is true but means little.** The 20 offline tests pass, but none covers routing, approvals or bank checks, and one asserted the date bug (corrected in `aa58720`).
+- **Dates are read month first** (half of the old F8). `parse_date` turned `02/04/2026` into 4 February, so an early-April invoice landed in FY 2025-26 and its duplicate check missed. disp_02, copied as printed, would have gone through as ready. It was latent because the model returned ISO dates.
+  - **Fixed in `aa58720`:** dates are read day first, as §1 says, and month first for vendors whose country is US (dev_014 prints `04/03/2026` for 3 April). Dates that start with the year are read year, month, day, because `dateutil`'s day-first setting alone swaps ISO dates such as `2026-04-02` (`test_parsing.py`, `test_pipeline.py`, `test_rulings.py`).
 
 ## Found but not fixed
 
-- **Dates and amounts are parsed wrongly** (was F8; latent in my runs).
+- **Amounts are parsed wrongly** (the other half of the old F8; latent in my runs).
   - **What's wrong:**
-    - **Dates:** `parsing.py`'s `parse_date` reads dates month first, so `02/04/2026` becomes 4 February, not 2 April, and early-April invoices land in the wrong financial year.
     - **Amounts:** `parse_amount` crashes on `₹1.2 lakh`, `Rs. 1,500.00` and `1,500/-`.
     - **Storage:** money is stored as floats (`REAL` columns), which policy §1 forbids.
-    - **Tests:** `tests/test_parsing.py::test_parse_date_with_slashes` asserts the wrong date as correct.
-  - **Evidence (offline):** `parse_date('02/04/2026')` returns `2026-02-04`, and `parse_amount('₹1.2 lakh')` raises `ValueError`.
-  - **Why it waited:** neither bug fired on the real model. It returned ISO dates (`dev_015`: `2026-04-02`) and plain numbers, so `dev_005`'s "₹1.2 lakh" didn't crash anything. Both would fire as soon as a model follows the prompt's instruction to "copy amounts and dates exactly as they are printed". Since F6, an amount crash would give a `processing_error` line and a review, not a dropped document.
+  - **Evidence (offline):** `parse_amount('₹1.2 lakh')` raises `ValueError`.
+  - **Why it waited:** it never fired on the real model, which returned plain numbers, so `dev_005`'s "₹1.2 lakh" didn't crash anything. It would fire as soon as a model follows the prompt's instruction to "copy amounts and dates exactly as they are printed". Since F6, an amount crash would give a `processing_error` line and a review, not a dropped document.
 
 `[TODO: add the rest after today. For each one, say why it waited.]`
 
