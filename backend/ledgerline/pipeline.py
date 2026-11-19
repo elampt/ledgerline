@@ -12,7 +12,7 @@ from .llm.pricing import cost_usd
 from .models import Invoice, LineItem
 from .parsing import parse_amount, parse_date
 from .reference import ReferenceData
-from .validation import POLICY_CODES, is_domestic, run_checks
+from .validation import POLICY_CODES, find_vendor, is_domestic, run_checks
 
 HIGH_VALUE_THRESHOLD_PAISE = 5_00_000_00  # §4.1: ₹5,00,000.00 or more needs two approvals
 
@@ -28,7 +28,7 @@ def required_approvals(inv: Invoice, review_reasons: list[str] = ()) -> int:
     return 2 if round(inv.total * 100) >= HIGH_VALUE_THRESHOLD_PAISE else 1
 
 
-def normalize(data: dict) -> Invoice:
+def normalize(data: dict, month_first: bool = False) -> Invoice:
     items = [
         LineItem(
             description=str(item.get("description", "")),
@@ -43,7 +43,7 @@ def normalize(data: dict) -> Invoice:
         supplier_name=data.get("supplier_name"),
         supplier_gstin=data.get("supplier_gstin"),
         invoice_number=data.get("invoice_number"),
-        invoice_date=parse_date(data.get("invoice_date")),
+        invoice_date=parse_date(data.get("invoice_date"), month_first),
         currency=data.get("currency") or "INR",
         subtotal=parse_amount(data.get("subtotal")),
         cgst=parse_amount(data.get("cgst")) or 0.0,
@@ -69,6 +69,8 @@ def process_document(
 ) -> dict:
     data, responses = extract(raw_text, ref)
     inv = normalize(data)
+    if (find_vendor(ref, inv) or {}).get("country") == "US":  # §1: US vendors print dates month first
+        inv = normalize(data, month_first=True)
     warnings = run_checks(conn, ref, inv, raw_text=raw_text, org_id=org_id)
 
     # The code's checks decide routing. The model may add a §3 reason they missed (for example wording aimed

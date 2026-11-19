@@ -49,6 +49,12 @@ def test_disp_02_without_the_flag_needs_one_approval_as_policy_4_1_says(conn, re
     assert result["required_approvals"] == 1
 
 
+def test_disp_02_is_a_duplicate_even_when_the_model_copies_the_date_as_printed(conn, ref, monkeypatch):
+    result = process(conn, ref, monkeypatch, "disp_02", DISP_02 | {"invoice_date": "02/04/2026"})
+    assert result["invoice_date"] == "2026-04-02"  # 2 April, FY 2026-27, the same as the paid original
+    assert result["review_reasons"] == ["duplicate"]
+
+
 # --- disp_05: line 1 bills 4 × ₹3,850.00 as ₹15,950.00, and the total adds up to the printed amounts -------
 
 DISP_05 = {
