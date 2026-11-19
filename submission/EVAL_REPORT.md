@@ -12,15 +12,21 @@
 - **Three versions, same model:**
   - **Unmodified starter**, commit `45d56d5` (`baseline/`).
   - **Starter**, commit `2520a99` (`runs/starter_2520a99/`). This is the starter plus only the fix that lets it read the model's replies (F6), because unmodified it skips every document on this model. Everything else is the starter's own: two LLM calls per document, default reasoning, routing decided by the model, and its eval script.
-  - **Mine**, commit `d4eec74` (`runs/d4eec74/`): one call per document, `reasoning_effort=low`, routing decided by the code's checks, and bank account numbers masked in the prompt. The later commits (the audit log and cost reporting) don't change extraction or routing.
-- **Rate limits.** The provider rate-limited the starter's heavier traffic: `429 Too Many Requests` on 18 of 63 document attempts across its runs and re-runs. I re-ran the rate-limited documents twice, so the starter has two columns: **as run**, and **logic only**, with the re-run results. `dev_020` stayed rate-limited, so the logic-only column covers 23 of 24 documents. My pipeline wasn't rate-limited in any of its four runs.
+  - **Mine**, the final run at commit `73e89a3` (`runs/73e89a3/`), which produced the submitted `predictions_dev.jsonl` and `predictions_disputed.jsonl`: one call per document, `reasoning_effort=low`, routing decided by the code's checks, bank account numbers masked in the prompt, dates read day first, and retries on rate limits. The dev set ran with the Part 2 flags off, so it follows `AP_POLICY.md` as written; the disputed set ran with them on. My earlier runs are compared under *How much to trust these numbers*.
+- **Rate limits.** The provider rate-limited the starter's heavier traffic: `429 Too Many Requests` on 18 of 63 document attempts across its runs and re-runs. I re-ran the rate-limited documents twice, so the starter has two columns: **as run**, and **logic only**, with the re-run results. `dev_020` stayed rate-limited, so the logic-only column covers 23 of 24 documents. None of my five runs had a failed document. The first four were made before retries existed, so they weren't rate-limited at all. The final run had retries, which aren't logged, so it may have been rate-limited and recovered.
 
 To reproduce, put the provider settings in `.env`, then:
 
 ```bash
-# Mine (from the repository root, at d4eec74 or later)
-LLM_REASONING_EFFORT=low make predict
-python3 -I submission/runs/compare_runs.py "mine=submission/predictions_dev.jsonl"
+# Mine (from the repository root, at 73e89a3 or later): dev with the Part 2 flags off, disputed with them on
+export LLM_REASONING_EFFORT=low
+cd backend
+.venv/bin/python -m ledgerline.cli predict --input ../data/invoices/dev \
+    --reference ../data/reference --output ../submission/predictions_dev.jsonl
+LEDGERLINE_FLAG_DUPLICATE_ZERO_APPROVALS=1 LEDGERLINE_FLAG_LINE_AMOUNT_CHECK=1 \
+    .venv/bin/python -m ledgerline.cli predict --input ../data/invoices/disputed \
+    --reference ../data/reference --output ../submission/predictions_disputed.jsonl
+cd .. && python3 -I submission/runs/compare_runs.py "mine=submission/predictions_dev.jsonl"
 
 # Starter (commit 2520a99, in its own worktree, using the main virtualenv)
 git worktree add ../ledgerline-2520a99 2520a99 && cd ../ledgerline-2520a99/backend
@@ -48,7 +54,7 @@ set -a && . ../../ledgerline/.env && set +a && export PYTHONPATH=$PWD
 | Starter, its own eval run | 99.1% (226/228) | 78.5% (226/288) | not computed¹ |
 | Starter, as run (`predict`) | 99.6% (239/240) | – | **85.3%** (215/252) |
 | Starter, logic only | 99.6% (275/276) | – | **94.8%** (239/252) |
-| Mine | 99.7% (287/288) | – | **99.6%** (251/252) |
+| Mine | 99.3% (286/288) | – | **99.2%** (250/252) |
 
 ¹ The eval script doesn't save per-document results, so its leaked documents can't be separated out.
 
@@ -69,20 +75,20 @@ In order of importance to Meridian:
 
 ## Starter versus mine, on the same model
 
-24 labelled dev documents, `google/gemini-3.8-flash`. The full table is in `runs/starter_2520a99/comparison.md`.
+24 labelled dev documents, `google/gemini-3.8-flash`. The full table, which also has my earlier run `d4eec74`, is in `runs/starter_2520a99/comparison.md`.
 
 | Metric | Unmodified starter | Starter, as run | Starter, logic only | Mine |
 |---|---|---|---|---|
 | **Missed reviews (needed review, predicted ready)** | n/a: no document written | **2 of 13** | **2 of 13** (`dev_015`, `dev_019`) | **0 of 13** |
-| **Cost per document (₹)** | (54 paid calls, nothing produced) | 3.04 | 3.53 | **0.65** |
-| **Latency p50 and p95 (seconds)** | – | 46.9 / 67.3 | 48.6 / 67.3 | **3.8 / 10.5** |
+| **Cost per document (₹)** | (54 paid calls, nothing produced) | 3.04 | 3.53 | **0.61** |
+| **Latency p50 and p95 (seconds)** | – | 46.9 / 67.3 | 48.6 / 67.3 | **3.5 / 4.6** |
 | Extra reviews | – | 2 (rate limits) | 1 (rate limit) | 0 |
 | Failed documents | 24 of 24 | 4 of 24 | 1 of 24 | 0 of 24 |
 | Review reasons exactly right | 0 of 24 | 18 of 24 | 21 of 24 | **24 of 24** |
 | Required approvals right | 0 of 24 | 17 of 24 | 20 of 24 | **24 of 24** |
-| Field accuracy, honest | 0% | 85.3% | 94.8% | 99.6% |
+| Field accuracy, honest | 0% | 85.3% | 94.8% | 99.2% |
 | LLM calls per document | – | 2 | 2 | 1 |
-| Output tokens per document | – | 7,066 | 8,233 | 543 |
+| Output tokens per document | – | 7,066 | 8,233 | 434 |
 
 Notes:
 
@@ -90,22 +96,22 @@ Notes:
 - **What one pass and low reasoning cost me.** On its own, with one pass and low reasoning, the model also missed `dev_008`'s arithmetic (`experiments/latency_02_config_C_all_dev.log`). The code's totals check catches that too, so in my pipeline the cheaper setting costs nothing on routing.
 - **Cost in production terms.**
   - **Starter on Opus:** the CTO's October bill works out to about ₹6 a document ($165 for about 2,400 documents).
-  - **Mine:** at ₹0.65 a document, 3,000 documents a month come to about **₹1,950**, against a budget of ₹4,500 at ₹1.50.
-- **Time.** p95 is right at the 10-second target, and varies from run to run: 8.3, 10.2, 10.3 and 10.5 seconds across four runs. The slowest single document took 29.9 seconds for 405 output tokens, so the provider's response time causes the outliers, not the work.
+  - **Mine:** at ₹0.61 a document (₹0.61–0.65 across my five runs), 3,000 documents a month come to about **₹1,830–1,950**, against a budget of ₹4,500 at ₹1.50.
+- **Time.** p95 varies a lot from run to run: 4.6 seconds in the final run, but 8.3, 10.2, 10.3 and 10.5 seconds in the four runs before it. So treat it as at the 10-second target, not comfortably under it: 4.6 is the best of five. The slowest single document took 29.9 seconds for 405 output tokens, so the provider's response time causes the outliers, not the work.
 
 ## Labels I disagree with
 
 - **`dev_015` `invoice_number`.**
   - **The disagreement:** the document prints `SIS / 26-27 / 0018`. The label has `SIS/26-27/0018`, but `OUTPUT_CONTRACT.md` asks for the invoice number "as printed", and that's what the model returned.
-  - **If I'm right:** my field accuracy is 288/288 (100%). Routing is unaffected, because duplicate detection compares normalised numbers, so the document is still caught as a duplicate.
+  - **If I'm right:** my field accuracy is 287/288 (99.7%); the other miss is `dev_019`, under *Failure analysis*. Routing is unaffected, because duplicate detection compares normalised numbers, so the document is still caught as a duplicate.
 
 `[TODO: add any other label you disagree with, or say there are none]`
 
 ## Failure analysis
 
-**Mine:** no routing errors on the dev set, and one field error, the label question above. The remaining risks, ranked:
+**Mine:** no routing errors on the dev set, and two field errors. One is the label question above. The other is real: on `dev_019` the model wrote `Konkan Tooling Pvt. Ltd.`, the spelling `dev_006`'s e-invoice uses, where the email prints `Konkan Tooling Pvt Ltd`. It happened in one of my five runs. Routing is unaffected, because vendors are matched by GSTIN, not by name. The remaining risks, ranked:
 
-1. **Rate limits (provider).** The starter hit `429` on 18 of 63 attempts. Mine hit none in these runs, which were made before retries existed.
+1. **Rate limits (provider).** The starter hit `429` on 18 of 63 attempts. My first four runs hit none, and were made before retries existed. The final run had retries, which aren't logged.
    - **The fix (commit `b26c33e`):** up to 3 retries with backoff, honouring `Retry-After`. After the last attempt the document still goes to review as `processing_error`.
    - **What hasn't been tested:** whether the retry works under a real rate limit, beyond the simulated `429`s in the tests.
 2. **Injected instructions (rules and model).** `suspicious_content` is a code filter for markup and phrases aimed at AI or automation, with the model's own flag as a second layer. Only two dev documents test it. An injection phrased differently, and obeyed by the model, would get through to routing, unless another check catches the document, which F1's design ensures for every other rule.
@@ -118,9 +124,10 @@ Notes:
 
 - **The sample is small.** Zero misses in 13 documents that needed review means the true miss rate is plausibly anywhere from 0 to about **21%** (one-sided 95% bound). The stronger evidence is structural: every §3 rule is now a code check with a test named after the document it reproduces, and the model can only add reasons, never remove them.
 - **Stable across runs.**
-  - **Fields:** 287/288 in all four runs with these model settings.
-  - **Routing:** 0 misses and 0 extra reviews in both full runs since routing moved to code (`a3f51a3`, `d4eec74`), and in the replay of the recorded replies.
-  - **Time** varied: p95 8.3–10.5 seconds, max 10.2–29.9 seconds.
+  - **Fields:** 287/288 in the first four runs with these model settings, and 286/288 in the final run (`dev_019`'s supplier name, above).
+  - **Routing:** 0 misses and 0 extra reviews in all three full runs since routing moved to code (`a3f51a3`, `d4eec74`, `73e89a3`), and in the replay of the recorded replies.
+  - **Time** varied: p95 4.6–10.5 seconds, max 10.2–29.9 seconds.
+  - **Cost** barely moved: ₹0.61–0.65 a document.
 - **The starter's numbers depend on rate limiting.** Hence the two columns. One document (`dev_020`) never got a clean result.
 - **One model and one provider.** I didn't run Opus, the model Meridian runs today, so these numbers don't show how the fixed pipeline performs on it.
 - **What the dev set doesn't cover:**
