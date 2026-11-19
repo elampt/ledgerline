@@ -22,6 +22,7 @@ export default function App() {
   const [selected, setSelected] = useState<Invoice | null>(null);
   const [note, setNote] = useState("");
   const [message, setMessage] = useState("");
+  const [deciding, setDeciding] = useState(false);
 
   // Keep the queue fresh while documents are being processed.
   useEffect(() => {
@@ -49,19 +50,33 @@ export default function App() {
     event.target.value = "";
   }
 
-  async function approve() {
-    if (!selected) return;
-    const result = await approveInvoice(selected.id, note);
-    setMessage(`Approval recorded (${result.approvals} of ${result.required_approvals})`);
-    setSelected(await getInvoice(selected.id));
+  // One decision at a time: the buttons are disabled until the server answers (the server also
+  // ignores repeats, so a double-click can't create a second payment either way).
+  async function decide(action: () => Promise<string>) {
+    if (!selected || deciding) return;
+    setDeciding(true);
+    try {
+      setMessage(await action());
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : String(error));
+    } finally {
+      setSelected(await getInvoice(selected.id));
+      setDeciding(false);
+    }
   }
 
-  async function reject() {
-    if (!selected) return;
-    await rejectInvoice(selected.id, note);
-    setMessage("Document rejected");
-    setSelected(await getInvoice(selected.id));
-  }
+  const approve = () =>
+    decide(async () => {
+      const result = await approveInvoice(selected!.id, note);
+      const status = label(result.status);
+      return `Approval recorded (${result.approvals} of ${result.required_approvals}): ${status}`;
+    });
+
+  const reject = () =>
+    decide(async () => {
+      await rejectInvoice(selected!.id, note);
+      return "Document rejected";
+    });
 
   return (
     <div className="app">
@@ -193,8 +208,10 @@ export default function App() {
               <div className="decision">
                 <textarea placeholder="Note for the audit log" value={note} onChange={(e) => setNote(e.target.value)} />
                 <div className="actions">
-                  <button onClick={approve}>Approve</button>
-                  <button className="secondary" onClick={reject}>
+                  <button onClick={approve} disabled={deciding}>
+                    Approve
+                  </button>
+                  <button className="secondary" onClick={reject} disabled={deciding}>
                     Reject
                   </button>
                 </div>

@@ -71,7 +71,12 @@ async function decide(id: number, action: "approve" | "reject", note: string): P
     headers: { ...orgHeaders, "Content-Type": "application/json" },
     body: JSON.stringify({ user_id: CURRENT_USER, note }),
   });
-  return response.json();
+  const result = await response.json();
+  // The server refuses decisions the AP policy doesn't allow (409, 422); show its reason, not a success.
+  if (!response.ok) {
+    throw new Error(typeof result.detail === "string" ? result.detail : `HTTP ${response.status}`);
+  }
+  return result;
 }
 
 export const approveInvoice = (id: number, note: string) => decide(id, "approve", note);

@@ -61,29 +61,62 @@ def get_invoice(invoice_id: int, conn=Depends(get_conn)):
     return invoice
 
 
-@app.post("/api/invoices/{invoice_id}/approve")
-def approve_invoice(invoice_id: int, body: DecisionRequest, conn=Depends(get_conn)):
+def _decision_target(conn, invoice_id: int, body: DecisionRequest) -> dict:
+    """Start a write-locked transaction and load the invoice, so concurrent clicks are taken one at a time."""
+    if not body.user_id.strip():
+        raise HTTPException(status_code=422, detail="user_id is required")
+    conn.execute("BEGIN IMMEDIATE")
     invoice = db.get_invoice(conn, invoice_id)
     if invoice is None:
         raise HTTPException(status_code=404, detail="Invoice not found")
-    conn.execute(
-        "INSERT INTO approvals (invoice_id, user_id, note) VALUES (?, ?, ?)", (invoice_id, body.user_id, body.note)
-    )
-    approvals = conn.execute("SELECT COUNT(*) FROM approvals WHERE invoice_id = ?", (invoice_id,)).fetchone()[0]
-    status = invoice["status"]
-    if approvals >= invoice["required_approvals"]:
-        status = "approved"
-        conn.execute("UPDATE invoices SET status = 'approved' WHERE id = ?", (invoice_id,))
-        conn.execute("INSERT INTO payments (invoice_id, amount) VALUES (?, ?)", (invoice_id, invoice["total"]))
-    conn.commit()
+    return invoice
+
+
+@app.post("/api/invoices/{invoice_id}/approve")
+def approve_invoice(invoice_id: int, body: DecisionRequest, conn=Depends(get_conn)):
+    """AP policy §2 and §4. Safe to repeat: a second click or a retry changes nothing."""
+    try:
+        invoice = _decision_target(conn, invoice_id, body)
+        if invoice["status"] == "rejected":
+            raise HTTPException(status_code=409, detail="This document was rejected and can't be approved")
+        if invoice["document_type"] == "credit_note":
+            raise HTTPException(status_code=409, detail="Credit notes are never approved for payment")
+        if "duplicate" in invoice["review_reasons"]:
+            raise HTTPException(status_code=409, detail="A duplicate can't be approved; reject it instead")
+        if invoice["status"] != "approved":
+            if invoice["needs_review"] and not body.note.strip():
+                raise HTTPException(status_code=422,
+                                    detail="Add a note to approve a document that needed review")
+            conn.execute("INSERT OR IGNORE INTO approvals (invoice_id, user_id, note) VALUES (?, ?, ?)",
+                         (invoice_id, body.user_id.strip(), body.note))
+        approvals = conn.execute("SELECT COUNT(DISTINCT user_id) FROM approvals WHERE invoice_id = ?",
+                                 (invoice_id,)).fetchone()[0]
+        status = invoice["status"]
+        # §4.3: every invoice needs at least one human approval, whatever required_approvals says.
+        if status != "approved" and approvals >= max(1, invoice["required_approvals"]):
+            status = "approved"
+            conn.execute("UPDATE invoices SET status = 'approved' WHERE id = ?", (invoice_id,))
+            conn.execute("INSERT OR IGNORE INTO payments (invoice_id, amount) VALUES (?, ?)",
+                         (invoice_id, invoice["total"]))
+        conn.commit()
+    except BaseException:
+        conn.rollback()
+        raise
     return {"id": invoice_id, "approvals": approvals, "required_approvals": invoice["required_approvals"],
             "status": status}
 
 
 @app.post("/api/invoices/{invoice_id}/reject")
 def reject_invoice(invoice_id: int, body: DecisionRequest, conn=Depends(get_conn)):
-    conn.execute("UPDATE invoices SET status = 'rejected' WHERE id = ?", (invoice_id,))
-    conn.commit()
+    try:
+        invoice = _decision_target(conn, invoice_id, body)
+        if invoice["status"] == "approved":
+            raise HTTPException(status_code=409, detail="Already approved: its payment instruction exists")
+        conn.execute("UPDATE invoices SET status = 'rejected' WHERE id = ?", (invoice_id,))
+        conn.commit()
+    except BaseException:
+        conn.rollback()
+        raise
     return {"id": invoice_id, "status": "rejected"}
 
 

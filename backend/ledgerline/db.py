@@ -50,6 +50,10 @@ CREATE TABLE IF NOT EXISTS payments (
     amount REAL NOT NULL,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
+-- AP policy §4.2: one person approving twice counts once. §4.6: exactly one payment instruction.
+-- Enforced here as well as in the API, so a retry or a race can't get past it.
+CREATE UNIQUE INDEX IF NOT EXISTS approvals_one_per_person ON approvals (invoice_id, user_id);
+CREATE UNIQUE INDEX IF NOT EXISTS payments_one_per_invoice ON payments (invoice_id);
 CREATE TABLE IF NOT EXISTS llm_calls (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     invoice_id INTEGER REFERENCES invoices(id),
