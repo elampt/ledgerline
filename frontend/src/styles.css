@@ -51,6 +51,7 @@ td small { display: block; color: var(--muted); }
 .callout { border-left: 3px solid var(--rule); padding: 0.25rem 1rem; margin-top: 1rem; }
 .callout.review { border-color: var(--review); }
 .callout.warning { border-color: #b7791f; }
+.notes { white-space: pre-wrap; overflow-wrap: anywhere; }
 .document { background: var(--surface); border: 1px solid var(--rule); padding: 1rem; overflow-x: auto; font-size: 0.8rem; line-height: 1.45; }
 
 .decision { margin-top: 1.5rem; display: grid; gap: 0.6rem; max-width: 40rem; }

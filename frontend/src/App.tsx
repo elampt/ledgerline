@@ -176,7 +176,8 @@ export default function App() {
               {selected.notes && (
                 <div className="callout">
                   <h3>Notes on the document</h3>
-                  <div dangerouslySetInnerHTML={{ __html: selected.notes }} />
+                  {/* Document text is hostile: show it as text, never as HTML (dev_013 carries a script). */}
+                  <p className="notes">{selected.notes}</p>
                 </div>
               )}
 
