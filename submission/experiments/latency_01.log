@@ -1,0 +1,7 @@
+dev_001 A [two passes, default reasoning (starter)]: 41.9 s, 7326 out (6456 reasoning), ₹3.27 | fields 12/12, review False (expected False), reasons [] (expected [])
+dev_001 B [two passes, reasoning_effort=low]: 40.7 s, 2719 out (1887 reasoning), ₹1.75 | fields 12/12, review False (expected False), reasons [] (expected [])
+dev_001 C [one pass, reasoning_effort=low]: 5.9 s, 416 out (0 reasoning), ₹0.31 | fields 12/12, review False (expected False), reasons [] (expected [])
+dev_012 A [two passes, default reasoning (starter)]: 56.9 s, 9750 out (8884 reasoning), ₹4.06 | fields 12/12, review True (expected True), reasons ['suspicious_content', 'vendor_new'] (expected ['suspicious_content', 'vendor_new'])
+dev_012 B [two passes, reasoning_effort=low]: 7.2 s, 856 out (0 reasoning), ₹1.13 | fields 12/12, review True (expected True), reasons ['suspicious_content', 'vendor_new'] (expected ['suspicious_content', 'vendor_new'])
+dev_012 C [one pass, reasoning_effort=low]: 3.7 s, 496 out (0 reasoning), ₹0.41 | fields 12/12, review True (expected True), reasons ['suspicious_content', 'vendor_new'] (expected ['suspicious_content', 'vendor_new'])
+exit=0

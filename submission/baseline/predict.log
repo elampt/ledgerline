@@ -1,0 +1,37 @@
+# make predict — started 2026-11-19T04:39:53Z — commit 45d56d5
+cd backend && .venv/bin/python -m ledgerline.cli predict --input ../data/invoices/dev --reference ../data/reference --output ../submission/predictions_dev.jsonl
+[skip] dev_001.txt: Expecting value: line 1 column 1 (char 0)
+[skip] dev_002.txt: Expecting value: line 1 column 1 (char 0)
+[skip] dev_003.txt: Expecting value: line 1 column 1 (char 0)
+[skip] dev_004.txt: Expecting value: line 1 column 1 (char 0)
+[skip] dev_005.eml: Expecting value: line 1 column 1 (char 0)
+[skip] dev_006.json: Expecting value: line 1 column 1 (char 0)
+[skip] dev_007.json: Expecting value: line 1 column 1 (char 0)
+[skip] dev_008.txt: Expecting value: line 1 column 1 (char 0)
+[skip] dev_009.txt: Expecting value: line 1 column 1 (char 0)
+[skip] dev_010.txt: Expecting value: line 1 column 1 (char 0)
+[skip] dev_011.txt: Expecting value: line 1 column 1 (char 0)
+[skip] dev_012.eml: Expecting value: line 1 column 1 (char 0)
+[skip] dev_013.txt: Expecting value: line 1 column 1 (char 0)
+[skip] dev_014.txt: Expecting value: line 1 column 1 (char 0)
+[skip] dev_015.txt: Expecting value: line 1 column 1 (char 0)
+[skip] dev_016.txt: Expecting value: line 1 column 1 (char 0)
+[skip] dev_017.txt: Expecting value: line 1 column 1 (char 0)
+[skip] dev_018.txt: Expecting value: line 1 column 1 (char 0)
+[skip] dev_019.eml: Expecting value: line 1 column 1 (char 0)
+[skip] dev_020.txt: Expecting value: line 1 column 1 (char 0)
+[skip] dev_021.json: Expecting value: line 1 column 1 (char 0)
+[skip] dev_022.txt: Expecting value: line 1 column 1 (char 0)
+[skip] dev_023.eml: Expecting value: line 1 column 1 (char 0)
+[skip] dev_024.txt: Expecting value: line 1 column 1 (char 0)
+wrote 0/24 predictions to ../submission/predictions_dev.jsonl
+cd backend && .venv/bin/python -m ledgerline.cli predict --input ../data/invoices/disputed --reference ../data/reference --output ../submission/predictions_disputed.jsonl
+[skip] disp_01.txt: Expecting value: line 1 column 1 (char 0)
+[skip] disp_02.txt: Expecting value: line 1 column 1 (char 0)
+[skip] disp_03.txt: Expecting value: line 1 column 1 (char 0)
+[skip] disp_04.eml: Expecting value: line 1 column 1 (char 0)
+[skip] disp_05.txt: Expecting value: line 1 column 1 (char 0)
+[skip] disp_06.eml: Expecting value: line 1 column 1 (char 0)
+wrote 0/6 predictions to ../submission/predictions_disputed.jsonl
+make predict  0.85s user 0.18s system 0% cpu 6:01.86 total
+# exit=0 finished 2026-11-19T04:45:55Z

@@ -1,0 +1,37 @@
+# make eval — started 2026-11-19T04:46:08Z — commit 45d56d5
+cd backend && .venv/bin/python eval/run_eval.py
+skipping dev_001: Expecting value: line 1 column 1 (char 0)
+skipping dev_002: Expecting value: line 1 column 1 (char 0)
+skipping dev_003: Expecting value: line 1 column 1 (char 0)
+skipping dev_004: Expecting value: line 1 column 1 (char 0)
+skipping dev_005: Expecting value: line 1 column 1 (char 0)
+skipping dev_006: Expecting value: line 1 column 1 (char 0)
+skipping dev_007: Expecting value: line 1 column 1 (char 0)
+skipping dev_008: Expecting value: line 1 column 1 (char 0)
+skipping dev_009: Expecting value: line 1 column 1 (char 0)
+skipping dev_010: Expecting value: line 1 column 1 (char 0)
+skipping dev_011: Expecting value: line 1 column 1 (char 0)
+skipping dev_012: Expecting value: line 1 column 1 (char 0)
+skipping dev_013: Expecting value: line 1 column 1 (char 0)
+skipping dev_014: Expecting value: line 1 column 1 (char 0)
+skipping dev_015: Expecting value: line 1 column 1 (char 0)
+skipping dev_016: Expecting value: line 1 column 1 (char 0)
+skipping dev_017: Expecting value: line 1 column 1 (char 0)
+skipping dev_018: Expecting value: line 1 column 1 (char 0)
+skipping dev_019: Expecting value: line 1 column 1 (char 0)
+skipping dev_020: Expecting value: line 1 column 1 (char 0)
+skipping dev_021: Expecting value: line 1 column 1 (char 0)
+skipping dev_022: Expecting value: line 1 column 1 (char 0)
+skipping dev_023: Expecting value: line 1 column 1 (char 0)
+skipping dev_024: Expecting value: line 1 column 1 (char 0)
+Traceback (most recent call last):
+  File "/Users/elam/Work/Projects/ledgerline/backend/eval/run_eval.py", line 51, in <module>
+    main()
+    ~~~~^^
+  File "/Users/elam/Work/Projects/ledgerline/backend/eval/run_eval.py", line 47, in main
+    print(f"Field accuracy: {correct}/{total} = {correct / total:.1%}")
+                                                 ~~~~~~~~^~~~~~~
+ZeroDivisionError: division by zero
+make: *** [eval] Error 1
+make eval  0.60s user 0.12s system 0% cpu 4:53.31 total
+# exit=2 finished 2026-11-19T04:51:02Z

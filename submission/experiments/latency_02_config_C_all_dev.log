@@ -1,0 +1,34 @@
+dev_001 C [one pass, reasoning_effort=low]: 3.7 s, 416 out (0 reasoning), ₹0.63 | fields 12/12, review False (expected False), reasons [] (expected [])
+dev_002 C [one pass, reasoning_effort=low]: 3.8 s, 410 out (0 reasoning), ₹0.63 | fields 12/12, review False (expected False), reasons [] (expected [])
+dev_003 C [one pass, reasoning_effort=low]: 3.2 s, 357 out (0 reasoning), ₹0.60 | fields 12/12, review False (expected False), reasons [] (expected [])
+dev_004 C [one pass, reasoning_effort=low]: 8.1 s, 1584 out (1151 reasoning), ₹1.01 | fields 12/12, review True (expected True), reasons ['tax_type_mismatch'] (expected ['tax_type_mismatch'])
+dev_005 C [one pass, reasoning_effort=low]: 6.3 s, 352 out (0 reasoning), ₹0.60 | fields 12/12, review True (expected True), reasons ['bank_details_changed'] (expected ['bank_details_changed'])
+dev_006 C [one pass, reasoning_effort=low]: 3.0 s, 430 out (0 reasoning), ₹0.67 | fields 12/12, review False (expected False), reasons [] (expected [])
+dev_007 C [one pass, reasoning_effort=low]: 3.2 s, 353 out (0 reasoning), ₹0.63 | fields 12/12, review True (expected True), reasons ['credit_note'] (expected ['credit_note'])
+dev_008 C [one pass, reasoning_effort=low]: 3.6 s, 416 out (0 reasoning), ₹0.63 | fields 12/12, review False (expected True), reasons [] (expected ['totals_mismatch'])
+dev_009 C [one pass, reasoning_effort=low]: 3.6 s, 405 out (0 reasoning), ₹0.62 | fields 12/12, review False (expected False), reasons [] (expected [])
+dev_010 C [one pass, reasoning_effort=low]: 8.3 s, 361 out (0 reasoning), ₹0.60 | fields 12/12, review True (expected True), reasons ['gstin_invalid', 'vendor_unknown'] (expected ['gstin_invalid', 'vendor_unknown'])
+dev_011 C [one pass, reasoning_effort=low]: 3.8 s, 359 out (0 reasoning), ₹0.61 | fields 12/12, review True (expected True), reasons ['vendor_new'] (expected ['vendor_new'])
+dev_012 C [one pass, reasoning_effort=low]: 3.5 s, 486 out (0 reasoning), ₹0.41 | fields 12/12, review True (expected True), reasons ['suspicious_content', 'vendor_new'] (expected ['suspicious_content', 'vendor_new'])
+dev_013 C [one pass, reasoning_effort=low]: 3.6 s, 375 out (0 reasoning), ₹0.61 | fields 12/12, review True (expected True), reasons ['suspicious_content'] (expected ['suspicious_content'])
+dev_014 C [one pass, reasoning_effort=low]: 3.5 s, 371 out (0 reasoning), ₹0.60 | fields 12/12, review True (expected True), reasons ['foreign_currency'] (expected ['foreign_currency'])
+dev_015 C [one pass, reasoning_effort=low]: 3.3 s, 356 out (0 reasoning), ₹0.61 | fields 11/12, review False (expected True), reasons [] (expected ['duplicate'])
+dev_016 C [one pass, reasoning_effort=low]: 3.2 s, 338 out (0 reasoning), ₹0.59 | fields 12/12, review False (expected False), reasons [] (expected [])
+dev_017 C [one pass, reasoning_effort=low]: 4.1 s, 485 out (0 reasoning), ₹0.66 | fields 12/12, review False (expected False), reasons [] (expected [])
+dev_018 C [one pass, reasoning_effort=low]: 7.4 s, 351 out (0 reasoning), ₹0.59 | fields 12/12, review True (expected True), reasons ['vendor_unknown'] (expected ['vendor_unknown'])
+dev_019 C [one pass, reasoning_effort=low]: 4.4 s, 443 out (0 reasoning), ₹0.63 | fields 12/12, review False (expected True), reasons [] (expected ['duplicate'])
+dev_020 C [one pass, reasoning_effort=low]: 3.3 s, 357 out (0 reasoning), ₹0.61 | fields 12/12, review False (expected False), reasons [] (expected [])
+dev_021 C [one pass, reasoning_effort=low]: 4.1 s, 343 out (0 reasoning), ₹0.63 | fields 12/12, review False (expected False), reasons [] (expected [])
+dev_022 C [one pass, reasoning_effort=low]: 10.2 s, 338 out (0 reasoning), ₹0.59 | fields 12/12, review False (expected False), reasons [] (expected [])
+dev_023 C [one pass, reasoning_effort=low]: 4.5 s, 328 out (0 reasoning), ₹0.59 | fields 12/12, review False (expected False), reasons [] (expected [])
+dev_024 C [one pass, reasoning_effort=low]: 3.9 s, 431 out (0 reasoning), ₹0.63 | fields 12/12, review True (expected True), reasons ['bank_details_changed'] (expected ['bank_details_changed'])
+
+C [one pass, reasoning_effort=low] over 24 documents
+  failed (would be processing_error, so reviewed): []
+  time per document: p50 3.7 s, p95 8.3 s, max 10.2 s
+  cost per document: mean ₹0.62
+  fields correct: 287/288 = 99.7%
+  needed review but routed ready (missed): 3/13 ['dev_008', 'dev_015', 'dev_019']
+  routed to review without needing it (extra): 0 []
+  review reasons exactly right: 21/24
+exit=0

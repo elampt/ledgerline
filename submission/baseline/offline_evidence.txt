@@ -1,0 +1,34 @@
+==============================================================================
+F1: the model's requires_review is the routing decision; code checks are only warnings
+==============================================================================
+  dev_001, 1st upload: status=ready_for_approval needs_review=False review_reasons=[] warnings=['tax_type_mismatch', 'totals_mismatch'] required_approvals=1
+  dev_001, 2nd upload: status=ready_for_approval needs_review=False review_reasons=[] warnings=['tax_type_mismatch', 'totals_mismatch', 'duplicate'] required_approvals=1
+  -> the second copy of the same invoice is 'ready_for_approval'; 'duplicate' is only a warning.
+
+==============================================================================
+F2: approval endpoint (api.py approve_invoice)
+==============================================================================
+  (a) approve #1 by kavya.iyer -> {'id': 1, 'approvals': 1, 'required_approvals': 1, 'status': 'approved'}
+  (a) approve #2 by kavya.iyer -> {'id': 1, 'approvals': 2, 'required_approvals': 1, 'status': 'approved'}
+  (a) approve #3 by kavya.iyer -> {'id': 1, 'approvals': 3, 'required_approvals': 1, 'status': 'approved'}
+  (a) payment rows for invoice 1 (₹23,458.00): 3
+  (b) invoice 2: total ₹600,000.00, required_approvals=2
+  (b) approve #1 by kavya.iyer -> {'id': 2, 'approvals': 1, 'required_approvals': 2, 'status': 'ready_for_approval'}
+  (b) approve #2 by kavya.iyer -> {'id': 2, 'approvals': 2, 'required_approvals': 2, 'status': 'approved'}
+  (b) payment rows: 1  (one person satisfied a two-approval invoice)
+  (c) reject -> {'id': 3, 'status': 'rejected'}
+  (c) approve after reject -> {'id': 3, 'approvals': 1, 'required_approvals': 1, 'status': 'approved'}; payment rows: 1
+
+==============================================================================
+F3: bank-detail check compares IFSC only; duplicate check compares raw invoice numbers
+==============================================================================
+  vendor master V0030 Sitara: account 50200012345678, IFSC ZEPH0001234
+  dev_024 prints:              account 50200012349999, IFSC ZEPH0001234
+  dev_024: status=ready_for_approval needs_review=False review_reasons=[] warnings=['tax_type_mismatch'] required_approvals=1
+  -> no bank_details_changed, even as a warning. The only warning, tax_type_mismatch, is false:
+     the supplier is in Maharashtra (27) and correctly charged CGST+SGST.
+
+  paid_invoices.csv: SIS/26-27/0018 dated 2026-04-02, ₹34,220.00, paid on 2026-04-22
+  dev_015 prints:    SIS / 26-27 / 0018 dated 02/04/2026, ₹34,220.00
+  dev_015: status=ready_for_approval needs_review=False review_reasons=[] warnings=['tax_type_mismatch'] required_approvals=1
+  -> no duplicate warning. Also, parse_date('02/04/2026') = 2026-02-04 (policy: 2026-04-02).
