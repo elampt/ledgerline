@@ -1,0 +1,7 @@
+# make predict — started 2026-11-19T07:54:10Z — code as committed in d4eec74 (run before the commit, on 033f3be plus these changes)
+cd backend && .venv/bin/python -m ledgerline.cli predict --input ../data/invoices/dev --reference ../data/reference --output ../submission/predictions_dev.jsonl
+wrote 24/24 predictions to ../submission/predictions_dev.jsonl (0 processing_error)
+cd backend && .venv/bin/python -m ledgerline.cli predict --input ../data/invoices/disputed --reference ../data/reference --output ../submission/predictions_disputed.jsonl
+wrote 6/6 predictions to ../submission/predictions_disputed.jsonl (0 processing_error)
+make predict  0.92s user 0.22s system 0% cpu 2:27.88 total
+# exit=0 finished 2026-11-19T07:56:38Z
