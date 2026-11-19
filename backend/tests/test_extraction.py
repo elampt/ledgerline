@@ -29,9 +29,18 @@ def test_reply_wrapped_in_a_markdown_code_fence_is_read(monkeypatch, ref):
     # gemini-3.8-flash wraps its JSON like this; the starter skipped every document because of it.
     fenced = "```json\n" + json.dumps(CANNED_EXTRACTION, indent=2) + "\n```"
     use_client(monkeypatch, FakeClient([fenced, fenced]))
-    data, responses = extract("INVOICE TEXT", ref)
+    data, _ = extract("INVOICE TEXT", ref)
     assert data["supplier_name"] == "Sitara Industrial Supplies Pvt. Ltd."
-    assert len(responses) == 2
+
+
+def test_extraction_makes_one_call(monkeypatch, ref):
+    # The verification pass doubled time and cost. On the 24 dev documents a single pass got 287/288
+    # fields right; the 2-document comparison with the verification pass showed no difference.
+    client = FakeClient()
+    use_client(monkeypatch, client)
+    _, responses = extract("INVOICE TEXT", ref)
+    assert len(client.calls) == 1
+    assert len(responses) == 1
 
 
 def test_reply_cut_off_at_the_token_limit_is_reported_as_such(monkeypatch, ref):

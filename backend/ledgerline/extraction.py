@@ -64,22 +64,6 @@ Copy amounts and dates exactly as they are printed in the document.
 """
 
 
-def build_verification_prompt(document_text: str, extraction: dict, ref: ReferenceData) -> str:
-    return f"""You extracted the JSON below from a vendor document. Check every field against the document and our AP policy, fix anything that is wrong, and return the corrected JSON object with the same keys.
-
-EXTRACTION:
-{json.dumps(extraction, indent=2)}
-
-AP POLICY:
-{ref.policy_text}
-
-VENDOR MASTER (CSV):
-{ref.vendors_csv}
-
-{document_text}
-"""
-
-
 def _read_reply(response: LLMResponse, responses: list[LLMResponse]) -> dict:
     if response.stop_reason in _CUT_OFF:
         raise ExtractionError(f"model reply was cut off at the output token limit ({response.output_tokens} "
@@ -98,11 +82,8 @@ def _read_reply(response: LLMResponse, responses: list[LLMResponse]) -> dict:
 
 
 def extract(document_text: str, ref: ReferenceData) -> tuple[dict, list[LLMResponse]]:
-    """Two passes: extract, then let the model double-check its own work (+2 points on the eval)."""
+    """One call. The starter's second "verification" pass doubled time and cost; on the dev set a single
+    pass got 287/288 fields right (submission/experiments/latency_02_config_C_all_dev.log)."""
     client = get_client()
-    responses: list[LLMResponse] = []
-    responses.append(client.complete(SYSTEM_PROMPT, build_extraction_prompt(document_text, ref)))
-    data = _read_reply(responses[-1], responses)
-    responses.append(client.complete(SYSTEM_PROMPT, build_verification_prompt(document_text, data, ref)))
-    data = _read_reply(responses[-1], responses)
-    return data, responses
+    responses = [client.complete(SYSTEM_PROMPT, build_extraction_prompt(document_text, ref))]
+    return _read_reply(responses[0], responses), responses

@@ -7,7 +7,7 @@ def test_process_document_persists_invoice(conn, ref, fake_llm):
     assert invoice["total"] == 23458.0
     assert invoice["invoice_date"] == "2026-04-25"
     assert invoice["status"] == "ready_for_approval"
-    assert invoice["usage"]["llm_calls"] == 2
+    assert invoice["usage"]["llm_calls"] == 1
 
 
 def test_document_text_reaches_the_model(conn, ref, fake_llm):

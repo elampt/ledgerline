@@ -16,7 +16,8 @@ def get_client() -> LLMClient:
     if settings.llm_provider == "openai_compat":
         from .openai_compat import OpenAICompatClient
 
-        return OpenAICompatClient(settings.openai_base_url, settings.openai_api_key, settings.llm_model)
+        return OpenAICompatClient(settings.openai_base_url, settings.openai_api_key, settings.llm_model,
+                                  reasoning_effort=settings.llm_reasoning_effort)
     if settings.llm_provider == "fake":
         from .fake import FakeClient
 

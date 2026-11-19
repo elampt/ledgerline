@@ -171,4 +171,9 @@ submission/               templates for your write-ups
 
 ## Running my version
 
-_Describe anything that changed about setup or commands._
+Setup and commands are unchanged. Differences from the starter:
+
+- **Model.** I used `LLM_PROVIDER=openai_compat` with `LLM_MODEL=google/gemini-3.8-flash`.
+- **`LLM_REASONING_EFFORT`** (new, optional, OpenAI-compatible provider only) is sent as the request's `reasoning_effort`. I ran with `LLM_REASONING_EFFORT=low`. It is not sent when unset, because some models reject it.
+- **One LLM call per document.** The starter made two (extract, then "verify").
+- **`make predict` never skips a document.** One it can't process gets a line with `needs_review: true` and `processing_error`.
