@@ -11,9 +11,18 @@ from .llm.pricing import cost_usd
 from .models import Invoice, LineItem
 from .parsing import parse_amount, parse_date
 from .reference import ReferenceData
-from .validation import run_checks
+from .validation import is_domestic, run_checks
 
-HIGH_VALUE_THRESHOLD = 500000  # invoices above this need two approvals
+HIGH_VALUE_THRESHOLD_PAISE = 5_00_000_00  # §4.1: ₹5,00,000.00 or more needs two approvals
+
+
+def required_approvals(inv: Invoice) -> int:
+    """§4.1. An unknown total can't be shown to be under the threshold, so it needs two."""
+    if inv.document_type == "credit_note":
+        return 0  # credit notes are never approved for payment
+    if not is_domestic(inv) or inv.total is None:
+        return 2
+    return 2 if round(inv.total * 100) >= HIGH_VALUE_THRESHOLD_PAISE else 1
 
 
 def normalize(data: dict) -> Invoice:
@@ -57,12 +66,12 @@ def process_document(
 ) -> dict:
     data, responses = extract(raw_text, ref)
     inv = normalize(data)
-    warnings = run_checks(conn, ref, inv)
+    warnings = run_checks(conn, ref, inv, raw_text=raw_text, org_id=org_id)
 
     # v0.3: the model applies the AP policy itself (it has the full policy text in its prompt).
     needs_review = bool(data.get("requires_review", False))
     review_reasons = list(data.get("review_reasons") or [])
-    required_approvals = 2 if (inv.total or 0) > HIGH_VALUE_THRESHOLD else 1
+    approvals_needed = required_approvals(inv)
     status = "needs_review" if needs_review else "ready_for_approval"
 
     cur = conn.execute(
@@ -76,7 +85,7 @@ def process_document(
             inv.invoice_number, inv.invoice_date.isoformat() if inv.invoice_date else None, inv.currency,
             inv.subtotal, inv.cgst, inv.sgst, inv.igst, inv.round_off, inv.total, inv.bank_account, inv.ifsc,
             inv.po_number, inv.notes, json.dumps([asdict(i) for i in inv.line_items]), json.dumps(warnings),
-            int(needs_review), json.dumps(review_reasons), required_approvals, status,
+            int(needs_review), json.dumps(review_reasons), approvals_needed, status,
         ),
     )
     invoice_id = cur.lastrowid
