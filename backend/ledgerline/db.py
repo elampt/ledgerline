@@ -54,6 +54,20 @@ CREATE TABLE IF NOT EXISTS payments (
 -- Enforced here as well as in the API, so a retry or a race can't get past it.
 CREATE UNIQUE INDEX IF NOT EXISTS approvals_one_per_person ON approvals (invoice_id, user_id);
 CREATE UNIQUE INDEX IF NOT EXISTS payments_one_per_invoice ON payments (invoice_id);
+-- AP policy §4.7: approvals and rejections are recorded with who, when, which document, and the note.
+-- Append-only: the triggers refuse any edit or deletion.
+CREATE TABLE IF NOT EXISTS audit_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    invoice_id INTEGER NOT NULL REFERENCES invoices(id),
+    action TEXT NOT NULL CHECK (action IN ('approve', 'reject')),
+    user_id TEXT NOT NULL,
+    note TEXT,
+    created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+CREATE TRIGGER IF NOT EXISTS audit_log_no_update BEFORE UPDATE ON audit_log
+BEGIN SELECT RAISE(ABORT, 'audit_log is append-only'); END;
+CREATE TRIGGER IF NOT EXISTS audit_log_no_delete BEFORE DELETE ON audit_log
+BEGIN SELECT RAISE(ABORT, 'audit_log is append-only'); END;
 CREATE TABLE IF NOT EXISTS llm_calls (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     invoice_id INTEGER REFERENCES invoices(id),
@@ -96,4 +110,7 @@ def get_invoice(conn: sqlite3.Connection, invoice_id: int) -> dict | None:
         "cost_inr": round(usage["cost_usd"] * USD_TO_INR, 4),
         "latency_ms": usage["latency_ms"],
     }
+    inv["audit_log"] = [dict(r) for r in conn.execute(
+        "SELECT action, user_id, note, created_at FROM audit_log WHERE invoice_id = ? ORDER BY id",
+        (invoice_id,))]
     return inv

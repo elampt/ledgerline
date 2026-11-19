@@ -114,3 +114,45 @@ def test_approving_a_document_that_needed_review_requires_a_note(api, upload):
     assert approve(api, inv["id"], note="  ").status_code == 422  # §4.5
     assert approve(api, inv["id"], note="Called Sitara on the number on file; change confirmed.").json()[
         "status"] == "approved"
+
+
+# --- audit log (§4.7: approvals and rejections recorded with who, when, which document, and the note) ---
+
+def audit(api, invoice_id: int) -> list[dict]:
+    return api.get(f"/api/invoices/{invoice_id}").json()["audit_log"]
+
+
+def test_an_approval_is_logged_with_who_when_and_the_note(api, upload):
+    inv = upload()
+    approve(api, inv["id"], user="kavya.iyer", note="matches PO-2026-0117")
+    [entry] = audit(api, inv["id"])
+    expected = ("approve", "kavya.iyer", "matches PO-2026-0117")
+    assert (entry["action"], entry["user_id"], entry["note"]) == expected
+    assert entry["created_at"]
+
+
+def test_a_rejection_is_logged_with_who_when_and_the_note(api, upload):
+    inv = upload()
+    reject(api, inv["id"], user="farhan.sheikh", note="not our order")
+    [entry] = audit(api, inv["id"])
+    assert (entry["action"], entry["user_id"], entry["note"]) == ("reject", "farhan.sheikh", "not our order")
+    assert entry["created_at"]
+
+
+def test_repeated_clicks_log_one_decision(api, upload):
+    inv = upload()
+    for _ in range(3):
+        approve(api, inv["id"])
+    assert [e["action"] for e in audit(api, inv["id"])] == ["approve"]
+
+
+def test_the_audit_log_cannot_be_edited_or_deleted(api, upload):
+    import os
+
+    inv = upload()
+    reject(api, inv["id"])
+    with sqlite3.connect(os.environ["LEDGERLINE_DB"]) as conn:
+        for statement in ("UPDATE audit_log SET user_id = 'someone.else'", "DELETE FROM audit_log"):
+            with pytest.raises(sqlite3.DatabaseError):
+                conn.execute(statement)
+    assert audit(api, inv["id"])[0]["user_id"] == "farhan.sheikh"

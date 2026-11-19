@@ -61,6 +61,12 @@ def get_invoice(invoice_id: int, conn=Depends(get_conn)):
     return invoice
 
 
+def _audit(conn, invoice_id: int, action: str, body: DecisionRequest) -> None:
+    """AP policy §4.7: who, when (the table's timestamp), which document, and the note."""
+    conn.execute("INSERT INTO audit_log (invoice_id, action, user_id, note) VALUES (?, ?, ?, ?)",
+                 (invoice_id, action, body.user_id.strip(), body.note))
+
+
 def _decision_target(conn, invoice_id: int, body: DecisionRequest) -> dict:
     """Start a write-locked transaction and load the invoice, so concurrent clicks are taken one at a time."""
     if not body.user_id.strip():
@@ -87,8 +93,11 @@ def approve_invoice(invoice_id: int, body: DecisionRequest, conn=Depends(get_con
             if invoice["needs_review"] and not body.note.strip():
                 raise HTTPException(status_code=422,
                                     detail="Add a note to approve a document that needed review")
-            conn.execute("INSERT OR IGNORE INTO approvals (invoice_id, user_id, note) VALUES (?, ?, ?)",
-                         (invoice_id, body.user_id.strip(), body.note))
+            added = conn.execute(
+                "INSERT OR IGNORE INTO approvals (invoice_id, user_id, note) VALUES (?, ?, ?)",
+                (invoice_id, body.user_id.strip(), body.note)).rowcount
+            if added:  # a repeat by the same person adds no approval and no log entry
+                _audit(conn, invoice_id, "approve", body)
         approvals = conn.execute("SELECT COUNT(DISTINCT user_id) FROM approvals WHERE invoice_id = ?",
                                  (invoice_id,)).fetchone()[0]
         status = invoice["status"]
@@ -112,7 +121,9 @@ def reject_invoice(invoice_id: int, body: DecisionRequest, conn=Depends(get_conn
         invoice = _decision_target(conn, invoice_id, body)
         if invoice["status"] == "approved":
             raise HTTPException(status_code=409, detail="Already approved: its payment instruction exists")
-        conn.execute("UPDATE invoices SET status = 'rejected' WHERE id = ?", (invoice_id,))
+        if invoice["status"] != "rejected":  # rejecting twice changes nothing and logs nothing
+            conn.execute("UPDATE invoices SET status = 'rejected' WHERE id = ?", (invoice_id,))
+            _audit(conn, invoice_id, "reject", body)
         conn.commit()
     except BaseException:
         conn.rollback()
