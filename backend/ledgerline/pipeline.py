@@ -97,7 +97,7 @@ def process_document(
             "INSERT INTO llm_calls (invoice_id, document_id, model, input_tokens, output_tokens, cost_usd, "
             "latency_ms) VALUES (?, ?, ?, ?, ?, ?, ?)",
             (invoice_id, document_id, r.model, r.input_tokens, r.output_tokens,
-             cost_usd(r.model, r.input_tokens, r.output_tokens), r.latency_ms),
+             cost_usd(r.model, r.input_tokens, r.output_tokens, r.cached_input_tokens), r.latency_ms),
         )
     conn.commit()
     return db.get_invoice(conn, invoice_id)

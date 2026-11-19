@@ -22,10 +22,13 @@ class AnthropicClient:
             messages=[{"role": "user", "content": prompt}],
         )
         text = "".join(block.text for block in message.content if block.type == "text")
+        # Anthropic reports cache reads separately from input_tokens; count them as input, priced as cached.
+        cached = getattr(message.usage, "cache_read_input_tokens", 0) or 0
         return LLMResponse(
             text=text,
             model=self.model,
-            input_tokens=message.usage.input_tokens,
+            input_tokens=message.usage.input_tokens + cached,
+            cached_input_tokens=cached,
             output_tokens=message.usage.output_tokens,
             latency_ms=int((time.monotonic() - started) * 1000),
             stop_reason=message.stop_reason,

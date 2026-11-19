@@ -100,6 +100,7 @@ def get_invoice(conn: sqlite3.Connection, invoice_id: int) -> dict | None:
     usage = conn.execute(
         "SELECT COUNT(*) AS calls, COALESCE(SUM(input_tokens), 0) AS input_tokens, "
         "COALESCE(SUM(output_tokens), 0) AS output_tokens, COALESCE(SUM(cost_usd), 0) AS cost_usd, "
+        "COUNT(*) - COUNT(cost_usd) AS unpriced, "
         "COALESCE(SUM(latency_ms), 0) AS latency_ms FROM llm_calls WHERE invoice_id = ?",
         (invoice_id,),
     ).fetchone()
@@ -107,7 +108,8 @@ def get_invoice(conn: sqlite3.Connection, invoice_id: int) -> dict | None:
         "llm_calls": usage["calls"],
         "input_tokens": usage["input_tokens"],
         "output_tokens": usage["output_tokens"],
-        "cost_inr": round(usage["cost_usd"] * USD_TO_INR, 4),
+        # None when a call's model has no known price, rather than a cost that silently leaves it out.
+        "cost_inr": None if usage["unpriced"] else round(usage["cost_usd"] * USD_TO_INR, 4),
         "latency_ms": usage["latency_ms"],
     }
     inv["audit_log"] = [dict(r) for r in conn.execute(

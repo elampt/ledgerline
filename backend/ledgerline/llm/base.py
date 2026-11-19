@@ -13,6 +13,7 @@ class LLMResponse:
     output_tokens: int
     latency_ms: int
     stop_reason: str | None = None  # why the reply ended; "length" / "max_tokens" mean it was cut off
+    cached_input_tokens: int = 0  # the part of input_tokens read from the provider's prompt cache
 
 
 class LLMClient(Protocol):

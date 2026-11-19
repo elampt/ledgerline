@@ -47,4 +47,5 @@ class OpenAICompatClient:
             output_tokens=usage.get("completion_tokens", 0),
             latency_ms=int((time.monotonic() - started) * 1000),
             stop_reason=choice.get("finish_reason"),
+            cached_input_tokens=(usage.get("prompt_tokens_details") or {}).get("cached_tokens") or 0,
         )

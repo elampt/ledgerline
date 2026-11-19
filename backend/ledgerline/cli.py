@@ -45,12 +45,13 @@ def processing_error_line(document_id: str, responses: list) -> dict:
     out["needs_review"] = True
     out["review_reasons"] = ["processing_error"]
     out["required_approvals"] = 2  # the total is unknown, so it can't be shown to be under ₹5,00,000
-    cost = sum(cost_usd(r.model, r.input_tokens, r.output_tokens) for r in responses)
+    costs = [cost_usd(r.model, r.input_tokens, r.output_tokens, r.cached_input_tokens) for r in responses]
     out["usage"] = {
         "llm_calls": len(responses),
         "input_tokens": sum(r.input_tokens for r in responses),
         "output_tokens": sum(r.output_tokens for r in responses),
-        "cost_inr": round(cost * USD_TO_INR, 4),
+        # None when a call's model has no known price, rather than a cost that silently leaves it out.
+        "cost_inr": None if None in costs else round(sum(costs) * USD_TO_INR, 4),
         "latency_ms": sum(r.latency_ms for r in responses),
     }
     return out

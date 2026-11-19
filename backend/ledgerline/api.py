@@ -133,9 +133,10 @@ def reject_invoice(invoice_id: int, body: DecisionRequest, conn=Depends(get_conn
 
 @app.get("/api/stats")
 def stats(org_id: str = Depends(get_org), conn=Depends(get_conn)):
-    """Feeds the cost dashboard."""
+    """Feeds the cost dashboard. Calls whose model has no known price are counted, not costed at ₹0."""
     row = conn.execute(
-        "SELECT COUNT(DISTINCT c.invoice_id) AS invoices, COALESCE(SUM(c.cost_usd), 0) AS cost_usd "
+        "SELECT COUNT(DISTINCT c.invoice_id) AS invoices, COALESCE(SUM(c.cost_usd), 0) AS cost_usd, "
+        "COUNT(*) - COUNT(c.cost_usd) AS unpriced "
         "FROM llm_calls c JOIN invoices i ON i.id = c.invoice_id WHERE i.org_id = ?",
         (org_id,),
     ).fetchone()
@@ -144,4 +145,5 @@ def stats(org_id: str = Depends(get_org), conn=Depends(get_conn)):
         "invoices_processed": row["invoices"],
         "llm_cost_inr": round(total_inr, 2),
         "avg_llm_cost_per_invoice_inr": round(total_inr / row["invoices"], 4) if row["invoices"] else 0.0,
+        "unpriced_llm_calls": row["unpriced"],
     }
