@@ -1,0 +1,38 @@
+{
+  "choices": [
+    {
+      "finish_reason": "length",
+      "index": 0,
+      "logprobs": null,
+      "message": {
+        "annotations": [],
+        "audio": null,
+        "content": "```json\n{\n  \"document_type\": \"invoice\",\n  \"supplier_name\": \"Sitara Industrial Supplies Pvt. Ltd.\",\n  \"supplier_gstin\": \"27AAKCS4821M1ZW\",\n  \"invoice_number\": \"SIS/26-27/0042\",\n  \"invoice_date",
+        "refusal": null,
+        "role": "assistant"
+      }
+    }
+  ],
+  "created": 1795064563,
+  "id": "chatcmpl-rFdQNTNHyCOmuydz4uuSn6CQxf1TR",
+  "model": "google/gemini-3.8-flash",
+  "object": "chat.completion",
+  "service_tier": null,
+  "usage": {
+    "completion_tokens": 1996,
+    "completion_tokens_details": {
+      "accepted_prediction_tokens": 0,
+      "audio_tokens": 0,
+      "reasoning_tokens": 1917,
+      "rejected_prediction_tokens": 0
+    },
+    "prompt_tokens": 7464,
+    "prompt_tokens_details": {
+      "audio_tokens": 0,
+      "cache_write_tokens": 0,
+      "cached_tokens": 5419
+    },
+    "total_tokens": 9460
+  },
+  "system_fingerprint": null
+}

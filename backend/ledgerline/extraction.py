@@ -2,10 +2,24 @@
 from __future__ import annotations
 
 import json
+import re
 
 from .config import get_settings
 from .llm import LLMResponse, get_client
 from .reference import ReferenceData
+
+# The whole reply is one JSON object, optionally inside a single Markdown code fence. Anything else
+# (prose, several blocks) is rejected rather than searched for something that looks like JSON.
+_CODE_FENCE = re.compile(r"```(?:json)?[ \t]*\n(.*)\n[ \t]*```", re.DOTALL | re.IGNORECASE)
+_CUT_OFF = {"length", "max_tokens"}  # OpenAI-compatible and Anthropic names for hitting the token limit
+
+
+class ExtractionError(Exception):
+    """The model's reply could not be used. Carries the calls already made, which were still paid for."""
+
+    def __init__(self, message: str, responses: list[LLMResponse]):
+        super().__init__(message)
+        self.responses = responses
 
 FIELDS = [
     "document_type", "supplier_name", "supplier_gstin", "invoice_number", "invoice_date", "currency",
@@ -66,11 +80,29 @@ VENDOR MASTER (CSV):
 """
 
 
+def _read_reply(response: LLMResponse, responses: list[LLMResponse]) -> dict:
+    if response.stop_reason in _CUT_OFF:
+        raise ExtractionError(f"model reply was cut off at the output token limit ({response.output_tokens} "
+                              f"output tokens)", responses)
+    text = response.text.strip()
+    fenced = _CODE_FENCE.fullmatch(text)
+    if fenced:
+        text = fenced.group(1)
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError as exc:
+        raise ExtractionError(f"model reply is not valid JSON: {exc}", responses) from exc
+    if not isinstance(data, dict):
+        raise ExtractionError("model reply is not a JSON object", responses)
+    return data
+
+
 def extract(document_text: str, ref: ReferenceData) -> tuple[dict, list[LLMResponse]]:
     """Two passes: extract, then let the model double-check its own work (+2 points on the eval)."""
     client = get_client()
-    first = client.complete(SYSTEM_PROMPT, build_extraction_prompt(document_text, ref))
-    data = json.loads(first.text)
-    second = client.complete(SYSTEM_PROMPT, build_verification_prompt(document_text, data, ref))
-    data = json.loads(second.text)
-    return data, [first, second]
+    responses: list[LLMResponse] = []
+    responses.append(client.complete(SYSTEM_PROMPT, build_extraction_prompt(document_text, ref)))
+    data = _read_reply(responses[-1], responses)
+    responses.append(client.complete(SYSTEM_PROMPT, build_verification_prompt(document_text, data, ref)))
+    data = _read_reply(responses[-1], responses)
+    return data, responses

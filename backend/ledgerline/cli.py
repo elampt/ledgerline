@@ -14,6 +14,8 @@ import tempfile
 from pathlib import Path
 
 from . import db
+from .config import USD_TO_INR
+from .llm.pricing import cost_usd
 from .pipeline import process_document
 from .reference import load_reference
 
@@ -35,23 +37,43 @@ def to_contract(invoice: dict) -> dict:
     return out
 
 
+def processing_error_line(document_id: str, responses: list) -> dict:
+    """The contract's line for a document Ledgerline could not process: never skipped, always reviewed."""
+    out = {"document_id": document_id}
+    out.update({f: None for f in TEXT_FIELDS + MONEY_FIELDS})
+    out["line_items"] = []
+    out["needs_review"] = True
+    out["review_reasons"] = ["processing_error"]
+    out["required_approvals"] = 2  # the total is unknown, so it can't be shown to be under ₹5,00,000
+    cost = sum(cost_usd(r.model, r.input_tokens, r.output_tokens) for r in responses)
+    out["usage"] = {
+        "llm_calls": len(responses),
+        "input_tokens": sum(r.input_tokens for r in responses),
+        "output_tokens": sum(r.output_tokens for r in responses),
+        "cost_inr": round(cost * USD_TO_INR, 4),
+        "latency_ms": sum(r.latency_ms for r in responses),
+    }
+    return out
+
+
 def predict(args: argparse.Namespace) -> None:
     ref = load_reference(args.reference)
     db_path = args.db or str(Path(tempfile.mkdtemp(prefix="ledgerline-")) / "predict.db")
     conn = db.connect(db_path)
     documents = sorted(p for p in Path(args.input).iterdir() if p.suffix in SUPPORTED_SUFFIXES)
-    written = 0
+    errors = 0
     with open(args.output, "w", encoding="utf-8") as out:
         for path in documents:
             try:
                 invoice = process_document(conn, ref, path.read_text(encoding="utf-8"), path.stem,
                                            filename=path.name)
-            except Exception as exc:  # keep the batch going
-                print(f"[skip] {path.name}: {exc}", file=sys.stderr)
-                continue
-            out.write(json.dumps(to_contract(invoice), ensure_ascii=False) + "\n")
-            written += 1
-    print(f"wrote {written}/{len(documents)} predictions to {args.output}")
+                line = to_contract(invoice)
+            except Exception as exc:  # never drop a document: write it for review instead
+                print(f"[processing_error] {path.name}: {exc}", file=sys.stderr)
+                line = processing_error_line(path.stem, getattr(exc, "responses", []))
+                errors += 1
+            out.write(json.dumps(line, ensure_ascii=False) + "\n")
+    print(f"wrote {len(documents)}/{len(documents)} predictions to {args.output} ({errors} processing_error)")
 
 
 def main(argv: list[str] | None = None) -> None:

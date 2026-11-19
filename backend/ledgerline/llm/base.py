@@ -12,6 +12,7 @@ class LLMResponse:
     input_tokens: int
     output_tokens: int
     latency_ms: int
+    stop_reason: str | None = None  # why the reply ended; "length" / "max_tokens" mean it was cut off
 
 
 class LLMClient(Protocol):

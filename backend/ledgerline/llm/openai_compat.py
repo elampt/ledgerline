@@ -19,7 +19,9 @@ class OpenAICompatClient:
         self.model = model
         self.timeout = timeout
 
-    def complete(self, system: str, prompt: str, max_tokens: int = 2000) -> LLMResponse:
+    # Reasoning models count hidden reasoning tokens against max_tokens. At 2,000, gemini-3.8-flash spent
+    # ~1,900 on reasoning and the JSON was cut off. Only tokens actually generated are billed.
+    def complete(self, system: str, prompt: str, max_tokens: int = 16000) -> LLMResponse:
         started = time.monotonic()
         headers = {"Authorization": f"Bearer {self.api_key}"} if self.api_key else {}
         response = httpx.post(
@@ -35,10 +37,12 @@ class OpenAICompatClient:
         response.raise_for_status()
         body = response.json()
         usage = body.get("usage") or {}
+        choice = body["choices"][0]
         return LLMResponse(
-            text=body["choices"][0]["message"]["content"] or "",
+            text=choice["message"]["content"] or "",
             model=self.model,
             input_tokens=usage.get("prompt_tokens", 0),
             output_tokens=usage.get("completion_tokens", 0),
             latency_ms=int((time.monotonic() - started) * 1000),
+            stop_reason=choice.get("finish_reason"),
         )

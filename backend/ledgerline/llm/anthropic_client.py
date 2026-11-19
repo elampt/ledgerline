@@ -28,4 +28,5 @@ class AnthropicClient:
             input_tokens=message.usage.input_tokens,
             output_tokens=message.usage.output_tokens,
             latency_ms=int((time.monotonic() - started) * 1000),
+            stop_reason=message.stop_reason,
         )
