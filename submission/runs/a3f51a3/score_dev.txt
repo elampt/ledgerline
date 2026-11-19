@@ -1,0 +1,9 @@
+documents: 24 labelled, 24 lines written, processing_error: []
+needed review but routed ready (missed): 0/13
+routed to review without needing it (extra): 0
+review reasons exactly right: 24/24
+required_approvals right: 24/24
+fields correct (failed documents count as wrong): 287/288 = 99.7%
+  dev_015.invoice_number: got 'SIS / 26-27 / 0018', expected 'SIS/26-27/0018'
+LLM time per document: p50 4.2 s, p95 10.3 s, max 29.9 s
+LLM cost per document at $0.75/$3.75 per M tokens, ignoring cache discounts: mean ₹0.63, total ₹15.22
