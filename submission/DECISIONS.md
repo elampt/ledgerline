@@ -18,11 +18,11 @@ I chose Option B: cost and reliability.
 
 Two of the four rollout conditions in the product brief are keeping costs at ₹1.50 per document and p95 processing time under 10 seconds. Since these apply are applicable to every invoice, improvements here will help to boost operational efficiency
 
-The starter implementation was significantly above both targets. My alternative model measured ₹3.04–₹3.53 per document with a p95 of approximately 67 seconds. Provider rate limits also affected 18 of 63 document attempts.
+The starter implementation was significantly above both targets. The starter design measured ₹3.04–₹3.53 per document with a p95 of approximately 67 seconds. Provider rate limits also affected 18 of 63 document attempts. The initial design was expensive
 
 After moving routing decisions into deterministic backend code, the model only needed to extract information it required. A single low-cost model pass achieved approximately 99.2% extraction accuracy, with measured costs of ₹0.61–₹0.65 per document across five runs. The code-controlled routing missed 0 of 13 review cases, compared with 3 misses when the model decided routing independently.
 
-I did not choose Option A because its most important payment-safety elements were already addressed through Part 1: server-side approval enforcement, protection against duplicate approvals and an audit log. I did not identify an option C as well in the given time
+I did not choose Option A because its most important payment-safety elements were already addressed through Part 1: server-side approval enforcement, protection against duplicate approvals and an audit log. I did not identify an option C as well in the given time.
 
 
 ## Replies to stakeholders
@@ -49,7 +49,7 @@ Not yet done:
 What I did:
 - The bill was right, but the dashboard was wrong. Per thousand prices were stored under per-million label, so the cost was 1,000x too low. Missing model prices also costed 0 Rupees, both are fixed now
 - Outages are now handled with retries on rate limits
-- LLM p95 of 4.6-10.5 accross five runs (the starter's was 67)
+- LLM p95 of 4.6-10.5 seconds accross five runs (the starter's was 67)
 
 Not yet done:
 - Fine tuning since extraction isn't the problem, the misses came from missing data and arithmetic which the code now hanles
@@ -57,9 +57,9 @@ Not yet done:
 
 ### Priya Natarajan, Data Protection Officer
 What I did:
-- Masked the last four digits of the bank account number that is being passed to the LLM
-- Implemented the whole AP policy
-- Regarding the question asked, yes we were initially sending the full acount number to LLM, it is now fixed
+- Masked all except last four digits of the bank account number that is being passed to the LLM
+- AP Policy text, vendor master, three example invoices, the document itself are sent to the LLM provider
+- Regarding the other question asked, yes we were initially sending the full acount number to LLM, it is now fixed
 
 Not yet done:
 - Gaps: Account number split accross lines or written in words aren't caught yet
@@ -82,7 +82,7 @@ What I agree:
 - I've removed the verification pass, it doubled the cost and there was no difference before and after
 
 What I don't agree:
-- Let the prompt and model decide the routing
+- Let the prompt and model decide the routing. When the model decided the routing, it missed reviews that no prompt can fix. With the model routing: 3 out of 13 missed. With the code routing, 0 got missed
 
 ## Policy changes I propose
 
