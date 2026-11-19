@@ -1,7 +1,6 @@
-"""Deterministic checks.
+"""Deterministic checks for the review reasons in AP_POLICY.md section 3.
 
-Since v0.3 these are informational: they are stored as `warnings` and shown to reviewers.
-Routing is decided by the model, which applies the AP policy itself (see pipeline.py).
+These decide routing (see pipeline.py). The model can add a reason they missed, but never remove one.
 """
 from __future__ import annotations
 
@@ -15,6 +14,9 @@ from .reference import ReferenceData
 GSTIN_PATTERN = re.compile(r"\d{2}[A-Z]{5}\d{4}[A-Z][1-9A-Z]Z[0-9A-Z]")
 GSTIN_ALPHABET = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 BUYER_STATE_CODE = "27"  # Maharashtra. A string: it is compared with the first two characters of a GSTIN.
+POLICY_CODES = frozenset({  # §3, the only review reasons Ledgerline may report
+    "credit_note", "duplicate", "gstin_invalid", "vendor_unknown", "vendor_new", "bank_details_changed",
+    "tax_type_mismatch", "totals_mismatch", "foreign_currency", "suspicious_content", "processing_error"})
 TOTALS_TOLERANCE_PAISE = 100  # §3: a difference of exactly ₹1.00 is within tolerance
 NEW_VENDOR_DAYS = 90
 # §3 suspicious_content: markup that a browser would run, and text addressed to automated systems or AI.

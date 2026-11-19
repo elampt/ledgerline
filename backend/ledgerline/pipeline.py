@@ -11,7 +11,7 @@ from .llm.pricing import cost_usd
 from .models import Invoice, LineItem
 from .parsing import parse_amount, parse_date
 from .reference import ReferenceData
-from .validation import is_domestic, run_checks
+from .validation import POLICY_CODES, is_domestic, run_checks
 
 HIGH_VALUE_THRESHOLD_PAISE = 5_00_000_00  # §4.1: ₹5,00,000.00 or more needs two approvals
 
@@ -68,9 +68,12 @@ def process_document(
     inv = normalize(data)
     warnings = run_checks(conn, ref, inv, raw_text=raw_text, org_id=org_id)
 
-    # v0.3: the model applies the AP policy itself (it has the full policy text in its prompt).
-    needs_review = bool(data.get("requires_review", False))
-    review_reasons = list(data.get("review_reasons") or [])
+    # The code's checks decide routing. The model may add a §3 reason they missed (for example wording aimed
+    # at AI that the keyword check doesn't know), but it can never remove one: a document that talks the
+    # model out of a review changes nothing. Codes outside §3 are dropped.
+    model_reasons = [r for r in (data.get("review_reasons") or []) if r in POLICY_CODES]
+    review_reasons = list(dict.fromkeys(warnings + model_reasons))
+    needs_review = bool(review_reasons)
     approvals_needed = required_approvals(inv)
     status = "needs_review" if needs_review else "ready_for_approval"
 
