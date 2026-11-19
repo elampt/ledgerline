@@ -1,0 +1,18 @@
+documents: 24 labelled, 24 lines written, processing_error: []
+needed review but routed ready (missed): 3/13
+  dev_008 (expected ['totals_mismatch'])
+  dev_015 (expected ['duplicate'])
+  dev_019 (expected ['duplicate'])
+routed to review without needing it (extra): 0
+review reasons exactly right: 21/24
+  dev_008: got [], expected ['totals_mismatch']
+  dev_015: got [], expected ['duplicate']
+  dev_019: got [], expected ['duplicate']
+required_approvals right: 21/24
+  dev_007: got 1, expected 0
+  dev_014: got 1, expected 2
+  dev_017: got 1, expected 2
+fields correct (failed documents count as wrong): 287/288 = 99.7%
+  dev_015.invoice_number: got 'SIS / 26-27 / 0018', expected 'SIS/26-27/0018'
+LLM time per document: p50 4.1 s, p95 10.2 s, max 11.1 s
+LLM cost per document at $0.75/$3.75 per M tokens, ignoring cache discounts: mean ₹0.64, total ₹15.41
