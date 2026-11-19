@@ -1,7 +1,5 @@
 # Findings
 
-> **Draft.** `[TODO]` marks what is still to decide or fill in.
-
 **Where the evidence comes from.** Two runs of the unmodified starter (commit `45d56d5`), both saved in [`baseline/`](baseline/):
 
 - **Real model.** `make predict` and `make eval` with `google/gemini-3.8-flash` through an OpenAI-compatible endpoint. The starter skipped all 30 documents (F6), so this run has no routing output to show.
@@ -19,7 +17,7 @@ Once F6 was fixed, I ran the pipeline on the real model again:
 
 ## The three fixes I would ship first, and why
 
-`[TODO: confirm once today's work is chosen]`
+All three are done: F1 in `a3f51a3`, F2 in `c21a163`, and F3's checks in `508f6d6`. F3's call-back step isn't built yet.
 
 1. **Make the code's checks decide routing (F1).** I'd fix the false tax-type and totals warnings (F4) at the same time, so the review queue isn't flooded. Everything else rests on this: today, even a check the code gets right is ignored.
 2. **Make Approve safe to click twice (F2).** That means one payment per invoice, one approval per person, and no approving a rejected or duplicate invoice. This double-payment path is known and happens without any attacker.
@@ -36,7 +34,7 @@ The order follows one question: how directly, and how likely, does the problem l
 - F5 needs an attacker and a reviewer to open the document.
 - F6 delays payments rather than misdirecting them.
 - F7 is a certain policy breach, but its harm is regulatory, not a wrong payment.
-- F8: `[TODO: once chosen]`.
+- F8 undoes the two-person control, but only if someone misuses it on purpose; nothing goes wrong by accident.
 
 ### F1: The model makes the routing decision, and the code's checks are only warnings
 
@@ -64,7 +62,7 @@ The order follows one question: how directly, and how likely, does the problem l
   - The policy allows no misses: at 13% of 3,000 documents, about 390 documents a month need review.
   - One missed bank-change fraud cost ₹3.8 lakh last quarter.
 
-  `[TODO: ask Meridian how often invoices are resent, to turn the duplicate case into a monthly figure]`
+  How often vendors resend an invoice is a question for Meridian. If one resend a month got through, at the median invoice that would be about ₹9.3 lakh a year.
 - **Fix:** commit `a3f51a3`, after the checks were corrected in `508f6d6` (F4).
   - A document goes to review when the code's checks find a §3 reason.
   - The model can add a §3 reason the checks missed, but it can't remove one. Codes outside §3 are dropped.
@@ -268,19 +266,30 @@ The order follows one question: how directly, and how likely, does the problem l
   - routing still misses 0 of 13 with no extra reviews;
   - reasons and approvals are right on 24 of 24;
   - the disputed routing is unchanged.
-- **Status:** fixed for account numbers (§5.1). Not done, and `[TODO: decide]`:
+- **Status:** fixed for account numbers (§5.1). Not done, and left on purpose for now:
   - **Data minimisation (§5.2).** The rest of the vendor master and the whole policy text still go out with every document. Since F1 the code matches vendors, so the model may not need the vendor master at all. Dropping it would also cut tokens, but it changes the model's input and needs measuring.
   - **Detection gaps.** A number split across lines or written in words would slip through.
 
-### F8: `[TODO: choose]`
+  I left both because §5.1, the hard rule, is met. Dropping the vendor master needs a measured run first, and I haven't seen either detection gap in the data.
 
-`[TODO: promote one of the one-liners below.]` Candidates:
+### F8: Anyone can approve under any name
 
-- **No authentication.** `user_id` comes from the request body. Since F2, the two-person rule rests entirely on that field, so one person can approve twice under two names.
-- **The cost dashboard is about 1,000× too low.** The CTO's question.
-- **The "94%" measures the wrong thing.**
+- **Severity:** high
+- **Why it ranks here:** It undoes the two-person control that F2 now enforces. But someone has to misuse it on purpose; nothing goes wrong by accident, which is why it ranks below the others.
+- **Where:**
+  - `api.py`, `DecisionRequest` (line 29) and `approve_invoice` (line 82). The approver is whatever `user_id` the request sends.
+  - `frontend/src/api.ts:2`, which hardcodes `kavya.iyer`.
+  - CORS allows every origin (`api.py:14`), and `GET /api/invoices/{id}` ignores the organisation.
+- **What's wrong:** There is no sign-in. Since F2, one approval per person is enforced, but the "person" is a name typed into the request.
+- **Impact:**
+  - One person can approve twice under two names, so a ₹5,00,000 or foreign-currency invoice can be released by one person.
+  - The audit log records whatever name was sent.
+  - With CORS open, a web page a reviewer happens to open could call the approve endpoint too.
+- **How I found it:** Reading `api.py`. It became serious once F2 enforced one approval per person, because that rule now rests on this field.
+- **What it could cost Meridian:** at least one high-value invoice, ₹5 lakh or more, each time it's misused.
+- **Fix:** not fixed. It needs a decision on how Meridian staff sign in, which isn't mine to make, and the CTO has ruled out new infrastructure this quarter. It's a go-live condition in `EVAL_REPORT.md`.
 
-The old F8 (dates and amounts) moved to *Found but not fixed*, because it was latent in my runs. Its date half was fixed later (`aa58720`), when disp_02 showed what it could let through.
+The other candidates for this slot, the cost dashboard and the "94%", are one-liners below. The old F8 (dates and amounts) moved to *Found but not fixed*, because it was latent in my runs. Its date half was fixed later (`aa58720`), when disp_02 showed what it could let through.
 
 ## Everything else I found (one line each)
 
@@ -295,7 +304,6 @@ The old F8 (dates and amounts) moved to *Found but not fixed*, because it was la
 - **The "94%"** scores 12 extraction fields and never routing. It drops failed documents from the denominator, and puts `dev_001`–`003` with their answers into every prompt as examples.
   - **On my model:** the unmodified starter crashed. With only the F6 fix, it printed 99.1% after silently dropping 5 rate-limited documents.
   - **Scored honestly:** 85–95%, as set out in `EVAL_REPORT.md`.
-- **There is no authentication.** `user_id` comes from the request body, and the UI hardcodes `kavya.iyer` (`frontend/src/api.ts:2`).
 - **`GET /api/invoices/{id}` ignores the org header**, so any org can read any invoice.
 - **There is no audit log of approvals and rejections** (policy §4.7). A rejection doesn't even record who rejected. **Fixed in `829bc8b`:** an append-only audit log, written in the same transaction as each decision (`test_approvals.py`).
 - **The UI polls every 500 ms and never stops** (`App.tsx:27–31`).
@@ -313,7 +321,18 @@ The old F8 (dates and amounts) moved to *Found but not fixed*, because it was la
   - **Evidence (offline):** `parse_amount('₹1.2 lakh')` raises `ValueError`.
   - **Why it waited:** it never fired on the real model, which returned plain numbers, so `dev_005`'s "₹1.2 lakh" didn't crash anything. It would fire as soon as a model follows the prompt's instruction to "copy amounts and dates exactly as they are printed". Since F6, an amount crash would give a `processing_error` line and a review, not a dropped document.
 
-`[TODO: add the rest after today. For each one, say why it waited.]`
+- **A failed upload returns an error** instead of going to review as `processing_error`.
+  - **Why it waited:** the nightly batch, the main path, is fixed (F6). A clerk sees the upload error, so nothing disappears silently.
+- **Calls for failed documents aren't written to `llm_calls`,** so the dashboard undercounts during an outage.
+  - **Why it waited:** the batch output records them (F6). It's a reporting gap, not a payment one.
+- **`GET /api/invoices/{id}` ignores the organisation.**
+  - **Why it waited:** Meridian is the only organisation today, and it belongs with sign-in (F8).
+- **The UI polls every 500 ms and never stops.**
+  - **Why it waited:** it costs server load, not money.
+- **Latency is LLM time only.**
+  - **Why it waited:** the rest of the pipeline is local and fast. But I haven't measured it, so the CTO's end-to-end target isn't proven.
+- **Invoices dated after they arrived aren't checked** (`disp_06`).
+  - **Why it waited:** it isn't one of my two riskiest disputed documents. I've proposed the check to the Finance Controller in `DECISIONS.md`.
 
 ## Things I'm not sure are problems at all
 

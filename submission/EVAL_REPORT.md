@@ -1,7 +1,5 @@
 # Evaluation report
 
-> **Draft.** `[TODO]` marks what is still to decide or check.
-
 ## Setup
 
 - **Provider and model.** `google/gemini-3.8-flash`, through an OpenAI-compatible endpoint, at $0.75 / $3.75 per million input / output tokens ($0.075 for cached input).
@@ -105,7 +103,10 @@ Notes:
   - **The disagreement:** the document prints `SIS / 26-27 / 0018`. The label has `SIS/26-27/0018`, but `OUTPUT_CONTRACT.md` asks for the invoice number "as printed", and that's what the model returned.
   - **If I'm right:** my field accuracy is 287/288 (99.7%); the other miss is `dev_019`, under *Failure analysis*. Routing is unaffected, because duplicate detection compares normalised numbers, so the document is still caught as a duplicate.
 
-`[TODO: add any other label you disagree with, or say there are none]`
+- **`dev_015` and `dev_019` `required_approvals`.**
+  - **The disagreement:** both are duplicates. The labels give each 1 approval, following §4.1 literally. In my `disp_02` ruling a duplicate needs 0, because §4.4 says it can't be approved, only rejected.
+  - **If I'm right:** with `LEDGERLINE_FLAG_DUPLICATE_ZERO_APPROVALS` on, both get 0, and "required approvals right" reads 22 of 24 against these labels (a replay of the recorded replies, offline). Routing and reasons don't change: both still go to review as `duplicate`. My submitted dev predictions use the flag off, so they match the labels.
+- **No others.** `dev_019`'s supplier name, my only other field miss, is the model's error: the label matches what the email prints.
 
 ## Failure analysis
 
@@ -144,10 +145,10 @@ Notes:
 1. **The fixes already made stay in.** Routing decided by the code's checks; Approve safe to repeat; bank account numbers masked; real cost reporting.
 2. **Before go-live:**
    - retry with backoff on rate limits (done: `b26c33e`);
-   - real authentication, because the two-person rule now rests on a `user_id` typed into the request (`FINDINGS.md`);
+   - real authentication, because the two-person rule now rests on a `user_id` typed into the request (`FINDINGS.md`, F8);
    - the bank-change call-back decided with the Finance Controller.
 
-   `[TODO: confirm which of these you'll have done]`
+   Only the retries are done. Sign-in and the call-back are still open, and they're conditions, not extras.
 3. **Shadow review for the first month.** AP also checks a random 10% of the documents Ledgerline routes as ready: about 260 a month, roughly **₹22,000** of AP time.
 4. **A daily check** of the `processing_error` count, p95 time and cost per document.
 
