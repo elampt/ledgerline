@@ -23,8 +23,8 @@ LEDGERLINE_FLAG_LINE_AMOUNT_CHECK=1: Checks quantity multiplied by unit price ag
 - **It rests on:** AP_POLICY §3 defines duplicates using GSTIN, normalized invoice number and financial year. Section 4.4 explicitly prohibits approving duplicates. The original invoice has already been paid.
 - **The best argument against my ruling:** This is marked REVISED and claims to supersede the original following a price revision. It may represent a legitimate additional liability rather than an attempt to collect twice.
 - **The policy change I'd propose, if any:** Define a formal revised-invoice and debit-note workflow. Require a reference to the original invoice, independent supplier confirmation and approval of only the verified difference. Never silently replace a paid invoice.
-- **Implemented?** Yes
-- **Does my pipeline's line in `predictions_disputed.jsonl` match?** Partially. It detects the duplicate correctly, but reports one required approval instead of enforcing the rejection-only restriction. (the block was already enforced and only the count was wrong)
+- **Implemented?** Yes, behind `LEDGERLINE_FLAG_DUPLICATE_ZERO_APPROVALS`. Tests: `test_rulings.py::test_disp_02_with_the_flag_a_duplicate_needs_no_approvals`, `::test_disp_02_without_the_flag_needs_one_approval_as_policy_4_1_says` and `test_approvals.py::test_disp_02_with_the_flag_a_duplicate_of_a_paid_invoice_can_only_be_rejected`. The date fix needs no flag: `test_rulings.py::test_disp_02_is_a_duplicate_even_when_the_model_copies_the_date_as_printed`.
+- **Does my pipeline's line in `predictions_disputed.jsonl` match?** Yes. With `LEDGERLINE_FLAG_DUPLICATE_ZERO_APPROVALS` on, it reports `duplicate` with zero required approvals, and the API refuses any approval.
 
 ## disp_03
 
@@ -50,8 +50,8 @@ LEDGERLINE_FLAG_LINE_AMOUNT_CHECK=1: Checks quantity multiplied by unit price ag
 - **It rests on:** The current policy checks whether printed line amounts add up to the invoice total, but does not check quantity multiplied by unit price. The first line is overstated by ₹550, creating a ₹649 difference including GST.
 - **The best argument against my ruling:** The printed line amount and invoice total agree. The discrepancy could be a legitimate pricing adjustment or a data-entry issue in the quantity or unit price.
 - **The policy change I'd propose, if any:** Add a line-level arithmetic check with a defined rounding tolerance. Discrepancies should require supporting documentation or supplier clarification before payment.
-- **Implemented?** Yes
-- **Does my pipeline's line in `predictions_disputed.jsonl` match?** No. It returns ready because it checks invoice totals but ignores quantity multiplied by unit price.
+- **Implemented?** Yes, behind `LEDGERLINE_FLAG_LINE_AMOUNT_CHECK`, with a tolerance of ₹1.00 per line. Tests: `test_rulings.py::test_disp_05_with_the_flag_a_line_that_is_not_quantity_times_rate_goes_to_review`, `::test_disp_05_without_the_flag_is_ready_as_policy_3_says` and `::test_with_the_flag_each_line_must_be_quantity_times_rate_within_one_rupee`.
+- **Does my pipeline's line in `predictions_disputed.jsonl` match?** Yes. With `LEDGERLINE_FLAG_LINE_AMOUNT_CHECK` on, it reports `line_amount_mismatch` with one approval.
 
 ## disp_06
 

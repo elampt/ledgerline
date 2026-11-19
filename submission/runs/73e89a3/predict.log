@@ -1,0 +1,10 @@
+# regenerate predictions — started 2026-11-19T12:16:06Z — commit 73e89a3
+# dev: flags off (AP_POLICY.md as written)
+cd backend && .venv/bin/python -m ledgerline.cli predict --input ../data/invoices/dev --reference ../data/reference --output ../submission/predictions_dev.jsonl
+wrote 24/24 predictions to ../submission/predictions_dev.jsonl (0 processing_error)
+# exit=0
+# disputed: LEDGERLINE_FLAG_DUPLICATE_ZERO_APPROVALS=1 LEDGERLINE_FLAG_LINE_AMOUNT_CHECK=1
+cd backend && LEDGERLINE_FLAG_DUPLICATE_ZERO_APPROVALS=1 LEDGERLINE_FLAG_LINE_AMOUNT_CHECK=1 .venv/bin/python -m ledgerline.cli predict --input ../data/invoices/disputed --reference ../data/reference --output ../submission/predictions_disputed.jsonl
+wrote 6/6 predictions to ../submission/predictions_disputed.jsonl (0 processing_error)
+# exit=0
+# finished 2026-11-19T12:18:14Z
