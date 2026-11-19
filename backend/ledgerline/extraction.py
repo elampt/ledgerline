@@ -6,6 +6,7 @@ import re
 
 from .config import get_settings
 from .llm import LLMResponse, get_client
+from .redaction import mask_account_numbers, mask_number, mask_vendor_csv, restore_account_number
 from .reference import ReferenceData
 
 # The whole reply is one JSON object, optionally inside a single Markdown code fence. Anything else
@@ -41,18 +42,23 @@ def _few_shot_examples(limit: int = 3) -> str:
         for line in list(f)[:limit]:
             row = json.loads(line)
             doc = (data_dir / "invoices" / "dev" / row["filename"]).read_text(encoding="utf-8")
-            blocks.append(f"DOCUMENT:\n{doc}\nOUTPUT:\n{json.dumps(row['expected'])}")
+            expected = dict(row["expected"])
+            if expected.get("bank_account"):
+                expected["bank_account"] = mask_number(expected["bank_account"])
+            block = f"DOCUMENT:\n{doc}\nOUTPUT:\n{json.dumps(expected)}"
+            blocks.append(mask_account_numbers(block)[0])
     return "\n\n".join(blocks)
 
 
 def build_extraction_prompt(document_text: str, ref: ReferenceData) -> str:
+    """Every account number in it (vendor master, examples, document) is masked to its last four digits."""
     return f"""Read the vendor document below, extract its fields, and decide whether it needs human review under our AP policy.
 
 AP POLICY:
 {ref.policy_text}
 
 VENDOR MASTER (CSV):
-{ref.vendors_csv}
+{mask_vendor_csv(ref.vendors_csv)}
 
 EXAMPLES:
 {_few_shot_examples()}
@@ -60,7 +66,7 @@ EXAMPLES:
 Return a JSON object with these keys: {", ".join(FIELDS)}, requires_review (true/false) and review_reasons (list of policy codes).
 Copy amounts and dates exactly as they are printed in the document.
 
-{document_text}
+{mask_account_numbers(document_text)[0]}
 """
 
 
@@ -86,4 +92,8 @@ def extract(document_text: str, ref: ReferenceData) -> tuple[dict, list[LLMRespo
     pass got 287/288 fields right (submission/experiments/latency_02_config_C_all_dev.log)."""
     client = get_client()
     responses = [client.complete(SYSTEM_PROMPT, build_extraction_prompt(document_text, ref))]
-    return _read_reply(responses[0], responses), responses
+    data = _read_reply(responses[0], responses)
+    # The model saw only masked account numbers (policy §5.1); restore the full one from the local document.
+    _, originals = mask_account_numbers(document_text)
+    data["bank_account"] = restore_account_number(data.get("bank_account"), originals)
+    return data, responses
