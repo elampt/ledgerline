@@ -6,6 +6,7 @@ The starter's price table held per-thousand-token prices under a per-million lab
 import json
 from pathlib import Path
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
 
@@ -41,14 +42,8 @@ def test_a_model_missing_from_the_table_is_unpriced_not_free():
 def test_the_openai_compatible_client_reports_cached_input_tokens(monkeypatch):
     body = json.loads(RECORDED.read_text(encoding="utf-8"))
 
-    class Recorded:
-        def raise_for_status(self):
-            pass
-
-        def json(self):
-            return body
-
-    monkeypatch.setattr("ledgerline.llm.openai_compat.httpx.post", lambda url, **kwargs: Recorded())
+    recorded = httpx.Response(200, json=body, request=httpx.Request("POST", "https://example.invalid"))
+    monkeypatch.setattr("ledgerline.llm.openai_compat.httpx.post", lambda url, **kwargs: recorded)
     response = OpenAICompatClient("https://example.invalid/v1", None, "m").complete("s", "p")
     assert (response.input_tokens, response.cached_input_tokens) == (7_464, 5_419)
 
